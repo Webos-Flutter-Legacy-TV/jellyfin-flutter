@@ -193,6 +193,18 @@ class Session extends ChangeNotifier {
   bool get autoplayNext => _prefs.getBool('autoplayNext') ?? true;
   int get seekBack => _prefs.getInt('seekBack') ?? 10;
   int get seekForward => _prefs.getInt('seekForward') ?? 30;
+  /// Subtitle text size (logical px on the 1080p canvas), colour, background and height.
+  int get subSize => _prefs.getInt('subSize') ?? 44;
+  String get subColor => _prefs.getString('subColor') ?? 'white';
+  String get subBackground => _prefs.getString('subBackground') ?? 'shadow';
+  int get subLift => _prefs.getInt('subLift') ?? 90;
+  /// Intros and recaps: 'button' (offer Skip), 'auto' (skip them), 'off'.
+  String get skipSegments => _prefs.getString('skipSegments') ?? 'button';
+  Future<void> setString(String key, String v) async {
+    await _prefs.setString(key, v);
+    notifyListeners();
+  }
+
   Future<void> setInt(String key, int v) async {
     await _prefs.setInt(key, v);
     notifyListeners();

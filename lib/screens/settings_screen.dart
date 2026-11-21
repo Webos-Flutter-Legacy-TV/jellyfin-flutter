@@ -8,6 +8,7 @@ import '../api/models.dart';
 import '../session.dart';
 import '../theme.dart';
 import '../ui/panel.dart';
+import '../ui/subtitle_text.dart';
 import '../ui/tv.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -84,6 +85,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ('When the audio is in another language', 'Smart'),
     ('Off', 'None'),
   ];
+
+  static const _skipModes = [('Show a Skip button', 'button'), ('Skip automatically', 'auto'), ('Off', 'off')];
+  static const _subSizes = [('Small', 34), ('Medium', 44), ('Large', 56), ('Extra large', 70)];
+  static const _subColors = [('White', 'white'), ('Yellow', 'yellow')];
+  static const _subBackgrounds = [('Drop shadow', 'shadow'), ('Outline', 'outline'), ('Translucent box', 'box'), ('Black box', 'solid')];
+  static const _subLifts = [('Low', 40), ('Normal', 90), ('Raised', 170)];
 
   @override
   Widget build(BuildContext context) {
@@ -198,6 +205,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (v != null) await _s.setBool('autoplayNext', v);
         setState(() {});
       }),
+      _row('Skip intros and recaps', 'Uses the intro markers on your server', _skipModes.where((m) => m.$2 == _s.skipSegments).firstOrNull?.$1 ?? '', () async {
+        final v = await _choose('Skip intros and recaps', _skipModes, _s.skipSegments);
+        if (v != null) await _s.setString('skipSegments', v);
+        setState(() {});
+      }),
       _row('Seek step', 'Left and right on the remote while playing', '${_s.seekBack} s back · ${_s.seekForward} s ahead', () async {
         final v = await _choose('Seek step', const [('5 s back · 10 s ahead', (5, 10)), ('10 s back · 30 s ahead', (10, 30)), ('15 s back · 60 s ahead', (15, 60))], (_s.seekBack, _s.seekForward));
         if (v != null) {
@@ -221,8 +233,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final v = await _choose('When to show subtitles', _subtitleModes, mode);
         if (v != null) await _saveConfig('SubtitleMode', v);
       }),
+      const SizedBox(height: 14),
+      _subtitlePreview(),
+      const SizedBox(height: 26),
+      _pick('Text size', _subSizes, _s.subSize, 'subSize'),
+      _pick('Text colour', _subColors, _s.subColor, 'subColor'),
+      _pick('Background', _subBackgrounds, _s.subBackground, 'subBackground'),
+      _pick('Position', _subLifts, _s.subLift, 'subLift'),
     ];
   }
+
+  Widget _pick<T>(String title, List<(String, T)> options, T current, String key) =>
+      _row(title, '', options.where((o) => o.$2 == current).firstOrNull?.$1 ?? '$current', () async {
+        final v = await _choose(title, options, current);
+        if (v is int) await _s.setInt(key, v);
+        if (v is String) await _s.setString(key, v);
+        setState(() {});
+      });
+
+  /// A still frame with the caption as the player will draw it (a 1920×1080 stage, scaled down).
+  Widget _subtitlePreview() => Align(
+        alignment: Alignment.centerLeft,
+        child: SizedBox(
+          width: 620,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: FittedBox(
+                child: SizedBox(
+                  width: 1920,
+                  height: 1080,
+                  child: Stack(children: [
+                    const Positioned.fill(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF3A5A78), Color(0xFFB98A5A), Color(0xFFE8D8B0)]),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      left: 200,
+                      right: 200,
+                      bottom: _s.subLift.toDouble(),
+                      child: Center(child: SubtitleText('This is how subtitles will look.', session: _s)),
+                    ),
+                  ]),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
 
   List<Widget> _account() => [
         _row('Switch user', '${_s.current!.accounts.length} signed in on this TV', '', () {

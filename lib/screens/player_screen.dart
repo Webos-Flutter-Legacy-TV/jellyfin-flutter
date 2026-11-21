@@ -15,6 +15,7 @@ import '../api/playback.dart';
 import '../api/remote.dart';
 import '../session.dart';
 import '../theme.dart';
+import '../ui/subtitle_text.dart';
 import '../ui/tv.dart';
 import '../ui/panel.dart';
 import 'panels.dart';
@@ -42,6 +43,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
   Duration? _seekTarget; // while seeking with Left / Right
   Timer? _seekCommit;
   List<({String type, Duration start, Duration end})> _segments = const [];
+  final Set<Duration> _autoSkipped = {}; // segments skipped automatically (by start), once each
+  String? _skippedNote; // "Skipped intro", shown for a few seconds
+  Timer? _noteTimer;
   bool _ended = false;
   Item? _upNext; // the item after this one (queue, or the next episode)
   double _speed = 1.0;
@@ -99,6 +103,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   @override
   void dispose() {
     _hideTimer?.cancel();
+    _noteTimer?.cancel();
     _reportTimer?.cancel();
     _seekCommit?.cancel();
     _remoteSub?.cancel();
@@ -154,6 +159,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
         if (mounted && _osd) _playFocus.requestFocus();
       });
       _segments = await _client.segments(item.id);
+      _autoSkipped.clear();
       _upNext ??= await _findNext(item);
       _showOsd();
     } on ApiException catch (e) {
@@ -171,7 +177,22 @@ class _PlayerScreenState extends State<PlayerScreen> {
       _finish();
       return;
     }
+    _autoSkip(v.position);
     setState(() {}); // position, buffering, caption
+  }
+
+  /// "Skip automatically": jump over an intro or recap the first time playback enters it.
+  void _autoSkip(Duration pos) {
+    if (widget.session.skipSegments != 'auto') return;
+    final seg = _segments.where((s) => (s.type == 'Intro' || s.type == 'Recap') && pos >= s.start && pos < s.end - const Duration(seconds: 2)).firstOrNull;
+    if (seg == null || !_autoSkipped.add(seg.start)) return;
+    _video?.seekTo(seg.end);
+    _report();
+    _skippedNote = seg.type == 'Intro' ? 'Skipped intro' : 'Skipped recap';
+    _noteTimer?.cancel();
+    _noteTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) setState(() => _skippedNote = null);
+    });
   }
 
   void _report() {
@@ -399,17 +420,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
   Widget _captions() {
     final text = _video?.value.caption.text ?? '';
     if (text.isEmpty) return const SizedBox.shrink();
+    final lift = widget.session.subLift.toDouble();
     return Positioned(
       left: 200,
       right: 200,
-      bottom: _osd ? 330 : 90,
-      child: Center(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-          decoration: BoxDecoration(color: const Color(0x99000000), borderRadius: BorderRadius.circular(8)),
-          child: Text(text.replaceAll(RegExp(r'<[^>]+>'), ''), textAlign: TextAlign.center, style: tv(40, weight: FontWeight.w600, height: 1.3)),
-        ),
-      ),
+      bottom: _osd ? (lift < 330 ? 330 : lift) : lift,
+      child: Center(child: SubtitleText(text.replaceAll(RegExp(r'<[^>]+>'), ''), session: widget.session)),
     );
   }
 
@@ -491,8 +507,25 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   Widget _skipButton() {
+    final note = _skippedNote;
+    if (note != null) {
+      return Positioned(
+        right: Insets.page,
+        bottom: _osd ? 330 : 90,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 14),
+          decoration: BoxDecoration(color: const Color(0xCC12151D), borderRadius: BorderRadius.circular(40)),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(Icons.fast_forward_rounded, color: Colors.white, size: 28),
+            const SizedBox(width: 10),
+            Text(note, style: tv(24, weight: FontWeight.w600)),
+          ]),
+        ),
+      );
+    }
     final pos = _position;
-    final seg = _segments.where((s) => (s.type == 'Intro' || s.type == 'Recap' || (s.type == 'Outro' && _upNext == null)) && pos >= s.start && pos < s.end - const Duration(seconds: 1)).firstOrNull;
+    final offerIntro = widget.session.skipSegments != 'off';
+    final seg = _segments.where((s) => (offerIntro && (s.type == 'Intro' || s.type == 'Recap') || (s.type == 'Outro' && _upNext == null)) && pos >= s.start && pos < s.end - const Duration(seconds: 1)).firstOrNull;
     if (seg == null) return const SizedBox.shrink();
     final label = switch (seg.type) { 'Intro' => 'Skip intro', 'Recap' => 'Skip recap', _ => 'Skip credits' };
     return Positioned(
