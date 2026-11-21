@@ -1,6 +1,7 @@
 // Mockup 11 · Settings, only what a TV viewer changes: playback, subtitles, account, versions.
 // Categories on the left; each row shows its value and OK opens a side panel of choices.
 // Language preferences are the user's on the server; the rest is kept on this TV.
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../api/client.dart';
@@ -206,6 +207,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (v != null) await _s.setBool('autoplayNext', v);
         setState(() {});
       }),
+      if (!kIsWeb)
+        _row('Player engine', 'Direct feed plays files without the server converting them (test)', _s.nativePlayer ? 'Direct feed (test)' : 'TV player', () async {
+          final v = await _choose('Player engine', const [('TV player', false), ('Direct feed (test)', true)], _s.nativePlayer);
+          if (v != null) await _s.setBool('nativePlayer', v);
+          setState(() {});
+        }),
       _row('Skip intros and recaps', 'Uses the intro markers on your server', _skipModes.where((m) => m.$2 == _s.skipSegments).firstOrNull?.$1 ?? '', () async {
         final v = await _choose('Skip intros and recaps', _skipModes, _s.skipSegments);
         if (v != null) await _s.setString('skipSegments', v);
