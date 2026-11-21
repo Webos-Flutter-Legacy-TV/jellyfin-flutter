@@ -25,11 +25,21 @@ class JellyfinClient {
   final String deviceName;
   String? token;
   String? userId;
+  /// The server's version ("12.0.0"): decides how a token goes into a URL (keyParam).
+  String? serverVersion;
   final http.Client _http;
 
-  JellyfinClient({required String baseUrl, required this.deviceId, this.deviceName = 'LG webOS TV', this.token, this.userId, http.Client? httpClient})
+  JellyfinClient({required String baseUrl, required this.deviceId, this.deviceName = 'LG webOS TV', this.token, this.userId, this.serverVersion, http.Client? httpClient})
       : baseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl,
         _http = httpClient ?? http.Client();
+
+  /// Name of the token parameter in URLs (streams, subtitles, trickplay, the WebSocket): Jellyfin
+  /// 10.11 and later take "ApiKey" and refuse the older "api_key"; older servers know only that.
+  String get keyParam {
+    final parts = (serverVersion ?? '').split('.').map((p) => int.tryParse(p) ?? 0).toList();
+    final major = parts.isNotEmpty ? parts[0] : 0, minor = parts.length > 1 ? parts[1] : 0;
+    return major > 10 || (major == 10 && minor >= 11) ? 'ApiKey' : 'api_key';
+  }
 
   String get authorization {
     final parts = ['Client="$appName"', 'Device="${_q(deviceName)}"', 'DeviceId="$deviceId"', 'Version="$appVersion"'];

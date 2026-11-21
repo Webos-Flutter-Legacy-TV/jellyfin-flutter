@@ -118,13 +118,13 @@ extension Playback on JellyfinClient {
     PlayMethod method;
     final transcodingUrl = src['TranscodingUrl'] as String?;
     if (src['SupportsDirectPlay'] == true && !wantsOtherAudio && transcodingUrl == null) {
-      url = uri('/Videos/${item.id}/stream', {'static': true, 'mediaSourceId': msid, 'playSessionId': session, 'deviceId': deviceId, 'api_key': token, 'container': src['Container']}).toString();
+      url = uri('/Videos/${item.id}/stream', {'static': true, 'mediaSourceId': msid, 'playSessionId': session, 'deviceId': deviceId, keyParam: token, 'container': src['Container']}).toString();
       method = PlayMethod.directPlay;
     } else if (transcodingUrl != null) {
       url = '$baseUrl$transcodingUrl';
       method = transcodingUrl.contains('/master.m3u8') && src['SupportsDirectStream'] == true && !transcodingUrl.contains('TranscodeReasons') ? PlayMethod.directStream : PlayMethod.transcode;
     } else {
-      url = uri('/Videos/${item.id}/stream', {'static': true, 'mediaSourceId': msid, 'playSessionId': session, 'deviceId': deviceId, 'api_key': token}).toString();
+      url = uri('/Videos/${item.id}/stream', {'static': true, 'mediaSourceId': msid, 'playSessionId': session, 'deviceId': deviceId, keyParam: token}).toString();
       method = PlayMethod.directPlay;
     }
 
@@ -133,7 +133,7 @@ extension Playback on JellyfinClient {
     if (sub != null && sub >= 0) {
       final stream = ((src['MediaStreams'] as List?) ?? const []).cast<Map<String, dynamic>>().where((s) => s['Index'] == sub).firstOrNull;
       if (stream != null && stream['DeliveryMethod'] == 'External') {
-        subUrl = uri('/Videos/${item.id}/$msid/Subtitles/$sub/0/Stream.vtt', {'api_key': token}).toString();
+        subUrl = uri('/Videos/${item.id}/$msid/Subtitles/$sub/0/Stream.vtt', {keyParam: token}).toString();
       }
     }
     return PlaybackPlan(url: url, method: method, playSessionId: session, mediaSourceId: msid, mediaSource: src, audioIndex: audio, subtitleIndex: sub, subtitleUrl: subUrl);
@@ -183,7 +183,7 @@ extension Playback on JellyfinClient {
     final n = (at.inMilliseconds ~/ interval).clamp(0, count - 1);
     final perSheet = cols * rows;
     return (
-      url: uri('/Videos/${item.id}/Trickplay/$w/${n ~/ perSheet}.jpg', {'mediaSourceId': mediaSourceId, 'api_key': token}).toString(),
+      url: uri('/Videos/${item.id}/Trickplay/$w/${n ~/ perSheet}.jpg', {'mediaSourceId': mediaSourceId, keyParam: token}).toString(),
       col: (n % perSheet) % cols,
       row: (n % perSheet) ~/ cols,
       tileW: (info['Width'] as num).toInt(),

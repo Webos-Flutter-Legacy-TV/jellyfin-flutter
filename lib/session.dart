@@ -68,7 +68,7 @@ class Session extends ChangeNotifier {
     return List.generate(16, (_) => r.nextInt(256).toRadixString(16).padLeft(2, '0')).join();
   }
 
-  JellyfinClient _clientFor(SavedServer s) => JellyfinClient(baseUrl: s.url, deviceId: deviceId, token: s.token, userId: s.userId);
+  JellyfinClient _clientFor(SavedServer s) => JellyfinClient(baseUrl: s.url, deviceId: deviceId, token: s.token, userId: s.userId, serverVersion: s.version);
 
   JellyfinClient clientForUrl(String url) => JellyfinClient(baseUrl: url, deviceId: deviceId);
 

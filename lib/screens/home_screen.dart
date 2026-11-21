@@ -1,5 +1,6 @@
 // Mockup 3 · Home: a hero for the title to continue (backdrop, logo, progress, Resume), then
 // the official app's sections: Continue watching, Next up, Recently added per library, My media.
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -7,6 +8,7 @@ import 'package:flutter/services.dart';
 
 import '../api/client.dart';
 import '../api/models.dart';
+import '../api/remote.dart';
 import '../nav.dart';
 import '../session.dart';
 import '../theme.dart';
@@ -41,11 +43,29 @@ class _HomeScreenState extends State<HomeScreen> {
   String get _cacheKey => 'home.${widget.session.current?.id}.${widget.session.current?.userId}';
   bool _stale = false; // showing the saved Home while the server cannot be reached
 
+  Timer? _refresh;
+
   @override
   void initState() {
     super.initState();
     _restore();
     _load();
+    // Watched state changed elsewhere (phone, another TV): refresh quietly.
+    remoteControl?.addListener(_onUserData);
+  }
+
+  void _onUserData() {
+    _refresh?.cancel();
+    _refresh = Timer(const Duration(seconds: 3), () {
+      if (mounted) _load();
+    });
+  }
+
+  @override
+  void dispose() {
+    remoteControl?.removeListener(_onUserData);
+    _refresh?.cancel();
+    super.dispose();
   }
 
   /// The last Home, shown at once on start; the fresh one replaces it when it arrives.

@@ -12,6 +12,7 @@ import 'package:video_player/video_player.dart';
 import '../api/client.dart';
 import '../api/models.dart';
 import '../api/playback.dart';
+import '../api/remote.dart';
 import '../session.dart';
 import '../theme.dart';
 import '../ui/tv.dart';
@@ -24,7 +25,9 @@ class PlayerScreen extends StatefulWidget {
   final bool fromStart;
   /// What plays after this item (Play all, Shuffle, a season or playlist), in order.
   final List<Item> queue;
-  const PlayerScreen({super.key, required this.session, required this.item, this.fromStart = false, this.queue = const []});
+  /// Start here instead of the resume point (a cast from another device says where).
+  final Duration? startAt;
+  const PlayerScreen({super.key, required this.session, required this.item, this.fromStart = false, this.queue = const [], this.startAt});
   @override
   State<PlayerScreen> createState() => _PlayerScreenState();
 }
@@ -48,10 +51,49 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   JellyfinClient get _client => widget.session.client!;
 
+  StreamSubscription? _remoteSub, _trackSub;
+
   @override
   void initState() {
     super.initState();
     _start();
+    // Another device controlling this TV (Jellyfin on a phone).
+    _remoteSub = remoteControl?.playstate.listen(_onRemote);
+    _trackSub = remoteControl?.trackRequests.listen((t) async {
+      final item = _item;
+      if (item == null) return;
+      widget.session.chooseTracks(item.id, audio: t.$1 == 'audio' ? t.$2 : null, subtitle: t.$1 == 'subtitle' ? t.$2 : null);
+      final at = _position;
+      _stopReporting();
+      await _start(at: at);
+    });
+  }
+
+  void _onRemote(RemotePlaystate c) {
+    final v = _video;
+    if (v == null) return;
+    switch (c.command) {
+      case 'Pause':
+        if (v.value.isPlaying) _togglePlay();
+      case 'Unpause':
+        if (!v.value.isPlaying) _togglePlay();
+      case 'PlayPause':
+        _togglePlay();
+      case 'Stop':
+        setState(() => _osd = false);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) Navigator.of(context).maybePop();
+        });
+      case 'NextTrack':
+        _playUpNext();
+      case 'PreviousTrack':
+        _seekBy(-_position);
+      case 'Seek':
+        if (c.seekTo != null) {
+          setState(() => _seekTarget = c.seekTo);
+          _commitSeek();
+        }
+    }
   }
 
   @override
@@ -59,6 +101,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
     _hideTimer?.cancel();
     _reportTimer?.cancel();
     _seekCommit?.cancel();
+    _remoteSub?.cancel();
+    _trackSub?.cancel();
     _stopReporting();
     _video?.dispose();
     _playFocus.dispose();
@@ -77,7 +121,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     try {
       final item = _item ?? await _client.item(widget.item.id);
       final choice = widget.session.trackChoices[item.id];
-      final start = at ?? (widget.fromStart ? Duration.zero : item.position);
+      final start = at ?? widget.startAt ?? (widget.fromStart ? Duration.zero : item.position);
       final plan = await _client.plan(item, audioIndex: choice?.audio, subtitleIndex: choice?.subtitle, start: start, maxBitrate: _bitrateOverride ?? widget.session.maxBitrate);
       // A transcode starts where it was asked to; a direct file is seeked once open.
       final controller = VideoPlayerController.networkUrl(Uri.parse(plan.url));

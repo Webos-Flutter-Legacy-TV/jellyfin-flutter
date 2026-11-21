@@ -1,5 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+import 'api/remote.dart';
+import 'nav.dart';
+import 'screens/player_screen.dart';
 
 import 'screens/connect_screen.dart';
 import 'screens/home_screen.dart';
@@ -10,10 +16,47 @@ import 'theme.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final session = await Session.load();
+  remoteControl = RemoteControl(session);
+  _listenToRemote(session, remoteControl!);
   runApp(JellyfinTvApp(session: session));
 }
 
 final navigatorKey = GlobalKey<NavigatorState>();
+final messengerKey = GlobalKey<ScaffoldMessengerState>();
+
+/// What another device asks of this TV: play something, show a message, go home, open an item.
+void _listenToRemote(Session session, RemoteControl remote) {
+  remote.playRequests.listen((req) {
+    final nav = navigatorKey.currentState;
+    if (nav == null || session.current?.signedIn != true) return;
+    nav.push(tvRoute(PlayerScreen(session: session, item: req.items.first, startAt: req.start, queue: req.items.sublist(1))));
+  });
+  remote.messages.listen((m) {
+    messengerKey.currentState?.showSnackBar(SnackBar(
+      behavior: SnackBarBehavior.floating,
+      width: 900,
+      duration: const Duration(seconds: 8),
+      backgroundColor: Palette.surfaceRaised,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      content: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+        Text(m.$1, style: tv(26, weight: FontWeight.w700)),
+        if (m.$2.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6), child: Text(m.$2, style: tv(22, color: Palette.text2))),
+      ]),
+    ));
+  });
+  remote.goHome.listen((_) => navigatorKey.currentState?.popUntil((r) => r.isFirst));
+  remote.openItem.listen((id) async {
+    final ctx = navigatorKey.currentContext;
+    final client = session.client;
+    if (ctx == null || client == null) return;
+    try {
+      final item = await client.item(id);
+      final c = navigatorKey.currentContext;
+      if (c != null && c.mounted) openItem(c, session, item);
+    } catch (_) {}
+  });
+}
+
 
 /// Back on the PC preview (Escape); on the TV the remote's Back arrives as a route pop.
 class BackIntent extends Intent {
@@ -48,6 +91,7 @@ class JellyfinTvApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: navigatorKey,
+      scaffoldMessengerKey: messengerKey,
       shortcuts: _shortcuts,
       actions: {
         ...WidgetsApp.defaultActions,
