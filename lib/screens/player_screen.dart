@@ -21,7 +21,9 @@ class PlayerScreen extends StatefulWidget {
   final Session session;
   final Item item;
   final bool fromStart;
-  const PlayerScreen({super.key, required this.session, required this.item, this.fromStart = false});
+  /// What plays after this item (Play all, Shuffle, a season or playlist), in order.
+  final List<Item> queue;
+  const PlayerScreen({super.key, required this.session, required this.item, this.fromStart = false, this.queue = const []});
   @override
   State<PlayerScreen> createState() => _PlayerScreenState();
 }
@@ -132,19 +134,27 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   /// At the end: the next episode when that setting is on, else back to where we came from.
+  void _playNext(Item next, List<Item> rest) {
+    _stopReporting();
+    Navigator.of(context).pushReplacement(PageRouteBuilder(
+      pageBuilder: (_, _, _) => PlayerScreen(session: widget.session, item: next, fromStart: true, queue: rest),
+      transitionDuration: const Duration(milliseconds: 250),
+      transitionsBuilder: (_, a, _, c) => FadeTransition(opacity: a, child: c),
+    ));
+  }
+
   Future<void> _finish() async {
+    if (widget.queue.isNotEmpty && mounted) {
+      _playNext(widget.queue.first, widget.queue.sublist(1));
+      return;
+    }
     final item = _item;
     if (item != null && item.isEpisode && item.seriesId != null && widget.session.autoplayNext) {
       try {
         final j = await _client.get('/Shows/${item.seriesId}/Episodes', {'userId': _client.userId, 'startItemId': item.id, 'limit': 2, 'fields': 'Overview'});
         final next = ItemsPage.fromJson(j).items.where((e) => e.id != item.id).firstOrNull;
         if (next != null && mounted) {
-          _stopReporting();
-          Navigator.of(context).pushReplacement(PageRouteBuilder(
-            pageBuilder: (_, _, _) => PlayerScreen(session: widget.session, item: next, fromStart: true),
-            transitionDuration: const Duration(milliseconds: 250),
-            transitionsBuilder: (_, a, _, c) => FadeTransition(opacity: a, child: c),
-          ));
+          _playNext(next, const []);
           return;
         }
       } on ApiException catch (_) {}

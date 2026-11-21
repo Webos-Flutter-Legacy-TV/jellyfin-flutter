@@ -198,9 +198,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
               Text(_loading ? 'Loading…' : '$_total ${showingGenres ? 'genres' : 'titles'}', style: tv(23, color: Palette.text3)),
               const SizedBox(width: 24),
               if (!showingGenres && _total > 0) ...[
-                PillButton(label: 'Play all', icon: Icons.play_arrow_rounded, height: 56, onPressed: () => _items.firstOrNull == null ? null : openPlayer(context, widget.session, _items.first!)),
+                PillButton(label: 'Play all', icon: Icons.play_arrow_rounded, height: 56, onPressed: () => openPlayer(context, widget.session, _genre ?? widget.library)),
                 const SizedBox(width: 14),
-                PillButton(label: 'Shuffle', icon: Icons.shuffle, height: 56, onPressed: () {}),
+                PillButton(label: 'Shuffle', icon: Icons.shuffle, height: 56, onPressed: () => openPlayer(context, widget.session, widget.library, shuffle: true)),
               ],
               const Spacer(),
               if (sortable) ...[

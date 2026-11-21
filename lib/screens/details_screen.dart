@@ -309,7 +309,9 @@ class _DetailsScreenState extends State<DetailsScreen> {
             ],
             const SizedBox(height: 26),
             Row(children: [
-              PillButton(label: playLabel, icon: Icons.play_arrow_rounded, primary: true, autofocus: true, height: 72, onPressed: () => openPlayer(context, widget.session, next ?? i)),
+              PillButton(label: playLabel, icon: Icons.play_arrow_rounded, primary: true, autofocus: true, height: 72, onPressed: () => openPlayer(context, widget.session, i)),
+              const SizedBox(width: 16),
+              PillButton(label: 'Shuffle', icon: Icons.shuffle, height: 72, onPressed: () => openPlayer(context, widget.session, i, shuffle: true)),
               const SizedBox(width: 16),
               ..._iconActions(i),
             ]),
