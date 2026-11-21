@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'api/remote.dart';
+import 'dev_autoplay.dart';
 import 'nav.dart';
+import 'screens/native_player_screen.dart';
 import 'screens/player_screen.dart';
 
 import 'screens/connect_screen.dart';
@@ -21,6 +23,20 @@ Future<void> main() async {
   remoteControl = RemoteControl(session);
   _listenToRemote(session, remoteControl!);
   runApp(JellyfinTvApp(session: session));
+  _devAutoplay(session);
+}
+
+Future<void> _devAutoplay(Session session) async {
+  final req = await readDevAutoplay();
+  if (req == null || session.current?.signedIn != true) return;
+  await Future<void>.delayed(const Duration(seconds: 3));
+  final nav = navigatorKey.currentState;
+  final client = session.client;
+  if (nav == null || client == null) return;
+  try {
+    final item = await client.item(req.$1);
+    nav.push(tvRoute(NativePlayerScreen(session: session, item: item, startAt: Duration(milliseconds: req.$2))));
+  } catch (_) {}
 }
 
 final navigatorKey = GlobalKey<NavigatorState>();

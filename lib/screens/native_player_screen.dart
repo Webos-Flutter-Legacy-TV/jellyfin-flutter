@@ -14,7 +14,8 @@ class NativePlayerScreen extends StatefulWidget {
   final Session session;
   final Item item;
   final bool fromStart;
-  const NativePlayerScreen({super.key, required this.session, required this.item, this.fromStart = false});
+  final Duration? startAt;
+  const NativePlayerScreen({super.key, required this.session, required this.item, this.fromStart = false, this.startAt});
   @override
   State<NativePlayerScreen> createState() => _NativePlayerScreenState();
 }
@@ -43,7 +44,7 @@ class _NativePlayerScreenState extends State<NativePlayerScreen> {
         'deviceId': _client.deviceId,
         _client.keyParam: _client.token,
       }).toString();
-      final player = NativePlayerController(url, startAt: widget.fromStart ? Duration.zero : item.position);
+      final player = NativePlayerController(url, startAt: widget.startAt ?? (widget.fromStart ? Duration.zero : item.position));
       player.addListener(() {
         if (mounted) setState(() {});
         if (player.value.completed && mounted) Navigator.of(context).maybePop();
