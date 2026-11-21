@@ -31,6 +31,23 @@ ares-install -d tv build/webos-compat/release/com.sostk.jellyfintv_*_arm.ipk
 
 On the user's LG C1 (webOS 6.5.3) the app's logical screen is 1920×1080, the size the mockups use.
 
+## Releases
+
+`.github/workflows/build.yml` builds the legacy package on every push, checks it against
+webosbrew's firmware symbol data (it must load on webOS 5 and newer) and keeps the IPK and its
+webOS Homebrew Channel manifest as a workflow artifact. A version tag publishes a release:
+
+```sh
+tools/set-version.sh 0.2.0          # pubspec.yaml, webos/meta/appinfo.json, lib/api/client.dart
+git commit -am "Version 0.2.0" && git tag v0.2.0 && git push && git push origin v0.2.0
+```
+
+The release carries `com.sostk.jellyfintv_<version>_arm.ipk`, `SHA256SUMS`, the icon and
+`com.sostk.jellyfintv.manifest.json` (id, version, `ipkUrl`, `ipkHash.sha256`, the format
+webosbrew's apps repository uses). Homebrew Channel downloads `ipkUrl` without signing in, so
+installing through it needs the repository (or at least its releases) to be public; until then,
+install the IPK with `ares-install`.
+
 ## Preview on the PC
 
 The same code builds for the browser (no UDP discovery there; type the server address). The
