@@ -11,7 +11,7 @@ import '../ui/cards.dart';
 import '../ui/header.dart';
 import '../ui/tv.dart';
 
-enum _Tab { all, favorites, collections, genres }
+enum _Tab { all, suggestions, upcoming, favorites, collections, genres, networks }
 
 class _Sort {
   final String label, by, order;
@@ -42,7 +42,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
   _Tab _tab = _Tab.all;
   int _sort = 0, _filter = 0;
-  Item? _genre;
+  Item? _genre; // a genre or network picked on its tab
+  List<(String, List<Item>, bool)> _rows = []; // Suggestions / Upcoming
   List<Item?> _items = [];
   int _total = 0;
   bool _loading = true;
@@ -55,6 +56,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
   JellyfinClient get _client => widget.session.client!;
   bool get _isShows => widget.library.collectionType == 'tvshows';
   bool get _isBoxSet => widget.library.type == 'BoxSet';
+  // A movies or shows library gets the official tabs; collections, playlists and folders a plain list.
+  bool get _isLibrary => widget.library.collectionType == 'movies' || widget.library.collectionType == 'tvshows';
 
   @override
   void initState() {
@@ -71,11 +74,13 @@ class _LibraryScreenState extends State<LibraryScreen> {
       'imageTypeLimit': 1,
     };
     switch (_tab) {
-      case _Tab.genres:
+      case _Tab.suggestions || _Tab.upcoming:
+        return base;
+      case _Tab.genres || _Tab.networks:
         if (_genre == null) {
           return {...base, 'includeItemTypes': _isShows ? 'Series' : 'Movie'};
         }
-        return {...base, 'recursive': true, 'includeItemTypes': _isShows ? 'Series' : 'Movie', 'genreIds': _genre!.id, 'sortBy': _sorts[_sort].by, 'sortOrder': _sorts[_sort].order, 'filters': f};
+        return {...base, 'recursive': true, 'includeItemTypes': _isShows ? 'Series' : 'Movie', _tab == _Tab.genres ? 'genreIds' : 'studioIds': _genre!.id, 'sortBy': _sorts[_sort].by, 'sortOrder': _sorts[_sort].order, 'filters': f};
       case _Tab.collections:
         return {...base, 'parentId': null, 'recursive': true, 'includeItemTypes': 'BoxSet', 'sortBy': 'SortName', 'sortOrder': 'Ascending'};
       case _Tab.favorites:
@@ -103,8 +108,18 @@ class _LibraryScreenState extends State<LibraryScreen> {
     });
     if (_scroll.hasClients) _scroll.jumpTo(0);
     try {
-      if (_tab == _Tab.genres && _genre == null) {
-        final j = await _client.get('/Genres', {'userId': _client.userId, 'parentId': widget.library.id, 'sortBy': 'SortName', 'includeItemTypes': _isShows ? 'Series' : 'Movie'});
+      if (_tab == _Tab.suggestions || _tab == _Tab.upcoming) {
+        final rows = _tab == _Tab.upcoming ? await _upcomingRows() : await _suggestionRows();
+        if (gen != _generation || !mounted) return;
+        setState(() {
+          _rows = rows;
+          _total = rows.fold(0, (n, r) => n + r.$2.length);
+          _loading = false;
+        });
+        return;
+      }
+      if ((_tab == _Tab.genres || _tab == _Tab.networks) && _genre == null) {
+        final j = await _client.get(_tab == _Tab.genres ? '/Genres' : '/Studios', {'userId': _client.userId, 'parentId': widget.library.id, 'sortBy': 'SortName', 'includeItemTypes': _isShows ? 'Series' : 'Movie'});
         final page = ItemsPage.fromJson(j);
         if (gen != _generation || !mounted) return;
         setState(() {
@@ -165,6 +180,60 @@ class _LibraryScreenState extends State<LibraryScreen> {
     } on ApiException catch (_) {}
   }
 
+  Future<List<(String, List<Item>, bool)>> _suggestionRows() async {
+    final id = widget.library.id;
+    final resume = ItemsPage.fromJson(await _client.get('/UserItems/Resume', {'userId': _client.userId, 'parentId': id, 'limit': 16, 'mediaTypes': 'Video', 'fields': 'PrimaryImageAspectRatio', 'enableImageTypes': 'Primary,Thumb,Backdrop', 'imageTypeLimit': 1})).items;
+    final latest = await _client.latest(id);
+    final rows = <(String, List<Item>, bool)>[
+      if (resume.isNotEmpty) ('Continue watching', resume, true),
+    ];
+    if (_isShows) {
+      final next = ItemsPage.fromJson(await _client.get('/Shows/NextUp', {'userId': _client.userId, 'parentId': id, 'limit': 16, 'fields': 'PrimaryImageAspectRatio', 'enableImageTypes': 'Primary,Thumb,Backdrop', 'imageTypeLimit': 1})).items;
+      if (next.isNotEmpty) rows.add(('Next up', next, true));
+      if (latest.isNotEmpty) rows.add(('Recently added', latest, false));
+    } else {
+      if (latest.isNotEmpty) rows.add(('Recently added', latest, false));
+      // "Because you watched …", "Starring …" (the server's recommendations).
+      final recs = (await _client.get('/Movies/Recommendations', {'userId': _client.userId, 'parentId': id, 'categoryLimit': 4, 'itemLimit': 12, 'fields': 'PrimaryImageAspectRatio'}) as List?) ?? const [];
+      for (final r in recs.cast<Map<String, dynamic>>()) {
+        final items = ((r['Items'] as List?) ?? const []).map((e) => Item(e as Map<String, dynamic>)).toList();
+        if (items.isEmpty) continue;
+        final base = r['BaselineItemName'] ?? '';
+        final title = switch (r['RecommendationType']) {
+          'SimilarToRecentlyPlayed' || 'SimilarToLikedItem' => 'Because you watched $base',
+          'HasDirectorFromRecentlyPlayed' || 'HasLikedDirector' => 'Directed by $base',
+          'HasActorFromRecentlyPlayed' || 'HasLikedActor' => 'Starring $base',
+          _ => 'Recommended',
+        };
+        rows.add((title, items, false));
+      }
+    }
+    return rows;
+  }
+
+  Future<List<(String, List<Item>, bool)>> _upcomingRows() async {
+    final j = await _client.get('/Shows/Upcoming', {'userId': _client.userId, 'parentId': widget.library.id, 'limit': 60, 'fields': 'PrimaryImageAspectRatio,PremiereDate', 'enableImageTypes': 'Primary,Thumb,Backdrop', 'imageTypeLimit': 1});
+    final items = ItemsPage.fromJson(j).items;
+    // One row per air date, as the official Upcoming tab groups them.
+    final byDay = <String, List<Item>>{};
+    for (final e in items) {
+      final d = DateTime.tryParse('${e.raw['PremiereDate']}')?.toLocal();
+      final key = d == null ? 'Coming soon' : _day(d);
+      (byDay[key] ??= []).add(e);
+    }
+    return [for (final e in byDay.entries) (e.key, e.value, true)];
+  }
+
+  static String _day(DateTime d) {
+    final today = DateTime.now();
+    final diff = DateTime(d.year, d.month, d.day).difference(DateTime(today.year, today.month, today.day)).inDays;
+    if (diff == 0) return 'Today';
+    if (diff == 1) return 'Tomorrow';
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${days[d.weekday - 1]} ${d.day} ${months[d.month - 1]}';
+  }
+
   void _setTab(_Tab t) {
     if (_tab == t && _genre == null) return;
     _tab = t;
@@ -176,12 +245,16 @@ class _LibraryScreenState extends State<LibraryScreen> {
   Widget build(BuildContext context) {
     final tabs = <(String, _Tab)>[
       ('All', _Tab.all),
-      if (!_isBoxSet) ('Favorites', _Tab.favorites),
-      if (!_isBoxSet && !_isShows) ('Collections', _Tab.collections),
-      if (!_isBoxSet) ('Genres', _Tab.genres),
+      if (_isLibrary) ('Suggestions', _Tab.suggestions),
+      if (_isLibrary && _isShows) ('Upcoming', _Tab.upcoming),
+      if (_isLibrary) ('Favorites', _Tab.favorites),
+      if (_isLibrary && !_isShows) ('Collections', _Tab.collections),
+      if (_isLibrary) ('Genres', _Tab.genres),
+      if (_isLibrary && _isShows) ('Networks', _Tab.networks),
     ];
-    final showingGenres = _tab == _Tab.genres && _genre == null;
-    final sortable = !showingGenres && _tab != _Tab.collections && !_isBoxSet;
+    final showingGenres = (_tab == _Tab.genres || _tab == _Tab.networks) && _genre == null;
+    final rowsTab = _tab == _Tab.suggestions || _tab == _Tab.upcoming;
+    final sortable = !showingGenres && !rowsTab && _tab != _Tab.collections && _isLibrary;
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: Column(children: [
@@ -195,10 +268,10 @@ class _LibraryScreenState extends State<LibraryScreen> {
           padding: const EdgeInsets.fromLTRB(Insets.page, 14, Insets.page + 84, 20),
           child: FocusTraversalGroup(
             child: Row(children: [
-              Text(_loading ? 'Loading…' : '$_total ${showingGenres ? 'genres' : 'titles'}', style: tv(23, color: Palette.text3)),
+              Text(_loading ? 'Loading…' : (rowsTab ? '' : '$_total ${showingGenres ? (_tab == _Tab.networks ? 'networks' : 'genres') : 'titles'}'), style: tv(23, color: Palette.text3)),
               const SizedBox(width: 24),
-              if (!showingGenres && _total > 0) ...[
-                PillButton(label: 'Play all', icon: Icons.play_arrow_rounded, height: 56, onPressed: () => openPlayer(context, widget.session, _genre ?? widget.library)),
+              if (!showingGenres && !rowsTab && _total > 0) ...[
+                PillButton(label: 'Play all', icon: Icons.play_arrow_rounded, height: 56, onPressed: () => openPlayer(context, widget.session, widget.library)),
                 const SizedBox(width: 14),
                 PillButton(label: 'Shuffle', icon: Icons.shuffle, height: 56, onPressed: () => openPlayer(context, widget.session, widget.library, shuffle: true)),
               ],
@@ -231,6 +304,15 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
   Widget _body(bool showingGenres) {
     if (_loading) return const StateMessage(title: 'Loading…', loading: true);
+    if (_tab == _Tab.suggestions || _tab == _Tab.upcoming) {
+      if (_rows.isEmpty) {
+        return StateMessage(title: _tab == _Tab.upcoming ? 'Nothing coming up' : 'No suggestions yet', detail: _tab == _Tab.upcoming ? 'New episodes of your shows show here once their air dates are known.' : 'Watch something and suggestions follow.');
+      }
+      return ListView(padding: const EdgeInsets.only(top: 10, bottom: 60), children: [
+        for (final (title, items, landscape) in _rows)
+          Padding(padding: const EdgeInsets.only(bottom: 24), child: CardRow(title: title, items: items, client: _client, landscape: landscape, onOpen: (x) => openItem(context, widget.session, x))),
+      ]);
+    }
     if (_error != null) return StateMessage(title: 'Could not load this library', detail: _error, action: PillButton(label: 'Try again', autofocus: true, onPressed: _reload));
     if (_total == 0) {
       return StateMessage(

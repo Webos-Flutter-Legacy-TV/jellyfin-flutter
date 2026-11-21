@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'api/models.dart';
 import 'screens/details_screen.dart';
+import 'screens/favorites_screen.dart';
 import 'screens/library_screen.dart';
 import 'screens/person_screen.dart';
 import 'screens/player_screen.dart';
@@ -97,4 +98,8 @@ class _Placeholder extends StatelessWidget {
           Expanded(child: StateMessage(title: '$what: next step', detail: 'This screen is built in the next commit.', action: PillButton(label: 'Back', autofocus: true, onPressed: () => Navigator.of(context).maybePop()))),
         ]),
       );
+}
+
+void openFavorites(BuildContext context, Session session) {
+  Navigator.of(context).push(tvRoute(FavoritesScreen(session: session)));
 }

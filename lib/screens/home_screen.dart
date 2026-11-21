@@ -94,6 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
         HeaderTab('Home', () {}, selected: true),
         for (final v in _views.where((v) => v.collectionType != 'livetv'))
           HeaderTab(v.name, () => _open(v)),
+        HeaderTab('Favorites', () => openFavorites(context, widget.session)),
       ],
       onSearch: () => openSearch(context, widget.session),
       onUser: () => openSettings(context, widget.session),
