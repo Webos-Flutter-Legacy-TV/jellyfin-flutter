@@ -1,6 +1,7 @@
 // Mockup 3 · Home: a hero for the title to continue (backdrop, logo, progress, Resume), then
 // the official app's sections: Continue watching, Next up, Recently added per library, My media.
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../api/client.dart';
 import '../api/models.dart';
@@ -31,6 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Item? _hero;
   String? _error;
   bool _loading = true;
+  DateTime? _backAt; // first Back on Home: the second one within 2.5 s leaves the app
 
   JellyfinClient get _client => widget.session.client!;
 
@@ -109,6 +111,33 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _open(Item item) => openItem(context, widget.session, item);
 
+  void _onBack() {
+    final now = DateTime.now();
+    if (_backAt != null && now.difference(_backAt!) < const Duration(milliseconds: 2500)) {
+      SystemNavigator.pop();
+      return;
+    }
+    _backAt = now;
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(SnackBar(
+        content: Text('Press Back again to leave', style: tv(24, weight: FontWeight.w600)),
+        duration: const Duration(milliseconds: 2500),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Palette.surfaceRaised,
+        width: 520,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ));
+  }
+
+  Widget _backGuard(Widget child) => PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) _onBack();
+        },
+        child: child,
+      );
+
   @override
   Widget build(BuildContext context) {
     final header = TopHeader(
@@ -123,7 +152,7 @@ class _HomeScreenState extends State<HomeScreen> {
       userInitial: (widget.session.current?.userName ?? '?').characters.first.toUpperCase(),
     );
     if (_loading || _error != null) {
-      return Scaffold(
+      return _backGuard(Scaffold(
         resizeToAvoidBottomInset: false,
         body: Column(children: [
           header,
@@ -133,10 +162,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 : StateMessage(title: 'Could not load Home', detail: _error, action: PillButton(label: 'Try again', autofocus: true, onPressed: _load)),
           ),
         ]),
-      );
+      ));
     }
-    return Scaffold(
-        resizeToAvoidBottomInset: false,
+    return _backGuard(Scaffold(
+      resizeToAvoidBottomInset: false,
       body: FocusTraversalGroup(
         policy: OrderedTraversalPolicy(),
         child: ListView(
@@ -153,7 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 }
 

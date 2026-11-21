@@ -244,8 +244,23 @@ class _PlayerScreenState extends State<PlayerScreen> {
   KeyEventResult _onKey(FocusNode node, KeyEvent e) {
     if (e is! KeyDownEvent && e is! KeyRepeatEvent) return KeyEventResult.ignored;
     final k = e.logicalKey;
-    if (k == LogicalKeyboardKey.mediaPlayPause || k == LogicalKeyboardKey.mediaPlay || k == LogicalKeyboardKey.mediaPause) {
+    // The remote's media buttons work whether the controls show or not.
+    if (k == LogicalKeyboardKey.mediaPlayPause || (k == LogicalKeyboardKey.mediaPlay && !(_video?.value.isPlaying ?? true)) || (k == LogicalKeyboardKey.mediaPause && (_video?.value.isPlaying ?? false))) {
       _togglePlay();
+      return KeyEventResult.handled;
+    }
+    if (k == LogicalKeyboardKey.mediaPlay || k == LogicalKeyboardKey.mediaPause) return KeyEventResult.handled;
+    if (k == LogicalKeyboardKey.mediaStop) {
+      setState(() => _osd = false); // so the pop is not taken as "hide the controls"
+      WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.of(context).maybePop());
+      return KeyEventResult.handled;
+    }
+    if (k == LogicalKeyboardKey.mediaTrackNext && _upNext != null) {
+      _playUpNext();
+      return KeyEventResult.handled;
+    }
+    if (k == LogicalKeyboardKey.mediaTrackPrevious) {
+      _seekBy(-_position);
       return KeyEventResult.handled;
     }
     if (k == LogicalKeyboardKey.mediaFastForward) {

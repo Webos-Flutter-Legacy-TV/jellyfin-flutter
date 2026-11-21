@@ -20,6 +20,12 @@ class BackIntent extends Intent {
   const BackIntent();
 }
 
+/// Channel up / down (and Page up / down): jump several rows at once in grids and lists.
+class PageIntent extends Intent {
+  final TraversalDirection direction;
+  const PageIntent(this.direction);
+}
+
 class JellyfinTvApp extends StatelessWidget {
   final Session session;
   const JellyfinTvApp({super.key, required this.session});
@@ -32,6 +38,10 @@ class JellyfinTvApp extends StatelessWidget {
     const SingleActivator(LogicalKeyboardKey.arrowLeft): const DirectionalFocusIntent(TraversalDirection.left),
     const SingleActivator(LogicalKeyboardKey.arrowRight): const DirectionalFocusIntent(TraversalDirection.right),
     const SingleActivator(LogicalKeyboardKey.escape): const BackIntent(),
+    const SingleActivator(LogicalKeyboardKey.channelUp): const PageIntent(TraversalDirection.up),
+    const SingleActivator(LogicalKeyboardKey.channelDown): const PageIntent(TraversalDirection.down),
+    const SingleActivator(LogicalKeyboardKey.pageUp): const PageIntent(TraversalDirection.up),
+    const SingleActivator(LogicalKeyboardKey.pageDown): const PageIntent(TraversalDirection.down),
   };
 
   @override
@@ -42,6 +52,13 @@ class JellyfinTvApp extends StatelessWidget {
       actions: {
         ...WidgetsApp.defaultActions,
         BackIntent: CallbackAction<BackIntent>(onInvoke: (_) => navigatorKey.currentState?.maybePop()),
+        PageIntent: CallbackAction<PageIntent>(onInvoke: (i) {
+          for (var n = 0; n < 4; n++) {
+            final f = FocusManager.instance.primaryFocus;
+            if (f == null || !f.focusInDirection(i.direction)) break;
+          }
+          return null;
+        }),
       },
       title: 'Jellyfin TV',
       debugShowCheckedModeBanner: false,
