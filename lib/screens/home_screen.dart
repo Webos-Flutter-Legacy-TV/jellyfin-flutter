@@ -1,5 +1,7 @@
 // Mockup 3 · Home: a hero for the title to continue (backdrop, logo, progress, Resume), then
 // the official app's sections: Continue watching, Next up, Recently added per library, My media.
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -36,15 +38,45 @@ class _HomeScreenState extends State<HomeScreen> {
 
   JellyfinClient get _client => widget.session.client!;
 
+  String get _cacheKey => 'home.${widget.session.current?.id}.${widget.session.current?.userId}';
+  bool _stale = false; // showing the saved Home while the server cannot be reached
+
   @override
   void initState() {
     super.initState();
+    _restore();
     _load();
   }
 
+  /// The last Home, shown at once on start; the fresh one replaces it when it arrives.
+  void _restore() {
+    final raw = widget.session.getCached(_cacheKey);
+    if (raw == null) return;
+    try {
+      final j = jsonDecode(raw) as Map<String, dynamic>;
+      _views = ((j['views'] as List?) ?? const []).map((e) => Item(e as Map<String, dynamic>)).toList();
+      _sections = ((j['sections'] as List?) ?? const []).map((e) {
+        final m = e as Map<String, dynamic>;
+        return _Section(m['title'] as String, ((m['items'] as List?) ?? const []).map((x) => Item(x as Map<String, dynamic>)).toList(), landscape: m['landscape'] == true);
+      }).toList();
+      _hero = j['hero'] == null ? null : Item(j['hero'] as Map<String, dynamic>);
+      _loading = false;
+    } catch (_) {}
+  }
+
+  void _save() {
+    final j = {
+      'views': [for (final v in _views) v.raw],
+      'sections': [for (final s in _sections) {'title': s.title, 'landscape': s.landscape, 'items': [for (final i in s.items) i.raw]}],
+      'hero': _hero?.raw,
+    };
+    widget.session.setCached(_cacheKey, jsonEncode(j));
+  }
+
   Future<void> _load() async {
+    final hadContent = _sections.isNotEmpty;
     setState(() {
-      _loading = true;
+      _loading = !hadContent;
       _error = null;
     });
     try {
@@ -82,13 +114,22 @@ class _HomeScreenState extends State<HomeScreen> {
         _sections = sections;
         _hero = hero;
         _loading = false;
+        _stale = false;
       });
+      _save();
     } on ApiException catch (e) {
       if (e.unauthorized) {
         await widget.session.signOut();
         return;
       }
-      if (mounted) {
+      if (!mounted) return;
+      if (_sections.isNotEmpty) {
+        // Keep the saved Home on screen and say so.
+        setState(() {
+          _loading = false;
+          _stale = true;
+        });
+      } else {
         setState(() {
           _error = e.message;
           _loading = false;
@@ -159,7 +200,15 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: _loading
                 ? const StateMessage(title: 'Loading your library…', loading: true)
-                : StateMessage(title: 'Could not load Home', detail: _error, action: PillButton(label: 'Try again', autofocus: true, onPressed: _load)),
+                : StateMessage(
+                    title: 'Cannot reach ${widget.session.current?.name ?? 'the server'}',
+                    detail: '$_error\nCheck that the server is on and the TV is on the same network.',
+                    action: Row(mainAxisSize: MainAxisSize.min, children: [
+                      PillButton(label: 'Try again', icon: Icons.refresh, autofocus: true, onPressed: _load),
+                      const SizedBox(width: 18),
+                      PillButton(label: 'Change server', onPressed: () => widget.session.leaveServer()),
+                    ]),
+                  ),
           ),
         ]),
       ));
@@ -172,6 +221,17 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.only(bottom: 80),
           children: [
             _HeroSection(item: _hero, client: _client, header: header, onPlay: _hero == null ? null : () => openPlayer(context, widget.session, _hero!), onInfo: _hero == null ? null : () => _open(_hero!)),
+            if (_stale)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(Insets.page, 8, Insets.page, 0),
+                child: Row(children: [
+                  const Icon(Icons.cloud_off, color: Palette.danger, size: 28),
+                  const SizedBox(width: 14),
+                  Text('The server cannot be reached: this is the Home from last time.', style: tv(22, color: Palette.text2)),
+                  const SizedBox(width: 20),
+                  PillButton(label: 'Try again', height: 56, onPressed: _load),
+                ]),
+              ),
             for (final s in _sections)
               Padding(
                 padding: const EdgeInsets.only(top: 24),
@@ -229,7 +289,7 @@ class _HeroSection extends StatelessWidget {
             Text(resumable ? 'CONTINUE WATCHING' : (i.isEpisode ? 'NEXT UP' : 'RECENTLY ADDED'), style: tv(21, weight: FontWeight.w700, color: Palette.accentText, spacing: 2.5)),
             const SizedBox(height: 22),
             if (logo != null)
-              SizedBox(height: 150, width: 640, child: Align(alignment: Alignment.bottomLeft, child: NetImage(logo, fit: BoxFit.contain, fallbackText: title)))
+              SizedBox(height: 150, width: 640, child: Align(alignment: Alignment.bottomLeft, child: NetImage(logo, fit: BoxFit.contain, fallback: Align(alignment: Alignment.bottomLeft, child: Text(title, style: tv(76, weight: FontWeight.w800, spacing: -1.5, height: 1), maxLines: 2, overflow: TextOverflow.ellipsis)))))
             else
               Text(title, style: tv(76, weight: FontWeight.w800, spacing: -1.5, height: 1), maxLines: 2, overflow: TextOverflow.ellipsis),
             const SizedBox(height: 22),

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../api/client.dart';
 import '../api/models.dart';
 import '../theme.dart';
+import 'image_cache.dart';
 import 'tv.dart';
 
 /// A network image that fades in and shows a tinted placeholder (with the title) until then.
@@ -13,21 +14,23 @@ class NetImage extends StatelessWidget {
   final String? fallbackText;
   final BoxFit fit;
   final int? cacheWidth;
-  const NetImage(this.url, {super.key, this.fallbackText, this.fit = BoxFit.cover, this.cacheWidth});
+  /// Shown instead of the tinted placeholder while loading or when the image fails (title logos).
+  final Widget? fallback;
+  const NetImage(this.url, {super.key, this.fallbackText, this.fit = BoxFit.cover, this.cacheWidth, this.fallback});
 
   @override
   Widget build(BuildContext context) {
-    final placeholder = Container(
+    final placeholder = fallback ?? Container(
       color: Palette.surfaceRaised,
       alignment: Alignment.bottomLeft,
       padding: const EdgeInsets.all(16),
       child: fallbackText == null ? null : Text(fallbackText!, style: tv(22, weight: FontWeight.w800, color: Palette.text2), maxLines: 3, overflow: TextOverflow.ellipsis),
     );
     if (url == null) return placeholder;
-    return Image.network(
-      url!,
+    final provider = cachedImage(url!);
+    return Image(
+      image: cacheWidth == null ? provider : ResizeImage(provider, width: cacheWidth, policy: ResizeImagePolicy.fit),
       fit: fit,
-      cacheWidth: cacheWidth,
       gaplessPlayback: true,
       frameBuilder: (context, child, frame, sync) => sync
           ? child

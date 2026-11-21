@@ -182,7 +182,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
     final logo = _client.logo(i);
     final name = i.isEpisode ? (i.seriesName ?? i.name) : i.name;
     if (logo != null) {
-      return SizedBox(height: size * 1.5, width: 700, child: Align(alignment: Alignment.bottomLeft, child: NetImage(logo, fit: BoxFit.contain, fallbackText: name)));
+      return SizedBox(height: size * 1.5, width: 700, child: Align(alignment: Alignment.bottomLeft, child: NetImage(logo, fit: BoxFit.contain, fallback: Align(alignment: Alignment.bottomLeft, child: Text(name, style: tv(size * 0.85, weight: FontWeight.w800, spacing: -1.5, height: 1.0), maxLines: 2, overflow: TextOverflow.ellipsis)))));
     }
     return Text(name, style: tv(size * 0.85, weight: FontWeight.w800, spacing: -1.5, height: 1.0), maxLines: 2, overflow: TextOverflow.ellipsis);
   }

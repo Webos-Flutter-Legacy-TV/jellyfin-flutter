@@ -135,6 +135,9 @@ class Session extends ChangeNotifier {
     notifyListeners();
   }
 
+  String? getCached(String key) => _prefs.getString('cache.$key');
+  Future<void> setCached(String key, String value) => _prefs.setString('cache.$key', value);
+
   List<String> get recentSearches => _prefs.getStringList('recentSearches') ?? const [];
   Future<void> addRecentSearch(String q) async {
     final t = q.trim();
