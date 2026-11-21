@@ -18,7 +18,7 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-enum _Cat { playback, subtitles, account, about }
+enum _Cat { playback, subtitles, display, account, about }
 
 class _SettingsScreenState extends State<SettingsScreen> {
   _Cat _cat = _Cat.playback;
@@ -123,7 +123,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ]),
               const SizedBox(height: 34),
-              for (final (c, label) in [(_Cat.playback, 'Playback'), (_Cat.subtitles, 'Subtitles'), (_Cat.account, 'Account'), (_Cat.about, 'About')])
+              for (final (c, label) in [(_Cat.playback, 'Playback'), (_Cat.subtitles, 'Subtitles'), (_Cat.display, 'Screen'), (_Cat.account, 'Account'), (_Cat.about, 'About')])
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: TvFocusable(
@@ -149,11 +149,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Expanded(
           child: FocusTraversalGroup(
             child: ListView(padding: const EdgeInsets.fromLTRB(90, 76, 110, 60), children: [
-              Text(switch (_cat) { _Cat.playback => 'Playback', _Cat.subtitles => 'Subtitles', _Cat.account => 'Account', _Cat.about => 'About' }, style: tv(48, weight: FontWeight.w700)),
+              Text(switch (_cat) { _Cat.playback => 'Playback', _Cat.subtitles => 'Subtitles', _Cat.display => 'Screen', _Cat.account => 'Account', _Cat.about => 'About' }, style: tv(48, weight: FontWeight.w700)),
               const SizedBox(height: 26),
               ...switch (_cat) {
                 _Cat.playback => _playback(),
                 _Cat.subtitles => _subtitles(),
+                _Cat.display => _display(),
                 _Cat.account => _account(),
                 _Cat.about => _about(),
               },
@@ -285,6 +286,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
       );
+
+  static const _screensaverWaits = [('After 2 minutes', 2), ('After 5 minutes', 5), ('After 10 minutes', 10), ('After 20 minutes', 20), ('Never', 0)];
+
+  List<Widget> _display() => [
+        _row('Screensaver', 'Backdrops from your libraries when the remote is idle; never during a video',
+            _screensaverWaits.where((w) => w.$2 == _s.screensaverMinutes).firstOrNull?.$1 ?? '${_s.screensaverMinutes} min', () async {
+          final v = await _choose('Screensaver', _screensaverWaits, _s.screensaverMinutes);
+          if (v != null) await _s.setInt('screensaver', v);
+          setState(() {});
+        }),
+      ];
 
   List<Widget> _account() => [
         _row('Switch user', '${_s.current!.accounts.length} signed in on this TV', '', () {

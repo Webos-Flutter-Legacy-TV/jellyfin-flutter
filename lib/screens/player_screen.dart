@@ -13,6 +13,7 @@ import '../api/client.dart';
 import '../api/models.dart';
 import '../api/playback.dart';
 import '../api/remote.dart';
+import '../screensaver.dart';
 import '../session.dart';
 import '../theme.dart';
 import '../ui/subtitle_text.dart';
@@ -102,6 +103,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   @override
   void dispose() {
+    videoPlaying.value = false;
     _hideTimer?.cancel();
     _noteTimer?.cancel();
     _reportTimer?.cancel();
@@ -178,6 +180,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
       return;
     }
     _autoSkip(v.position);
+    videoPlaying.value = v.isPlaying;
     setState(() {}); // position, buffering, caption
   }
 

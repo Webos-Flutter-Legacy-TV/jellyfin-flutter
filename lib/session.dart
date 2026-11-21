@@ -198,6 +198,8 @@ class Session extends ChangeNotifier {
   String get subColor => _prefs.getString('subColor') ?? 'white';
   String get subBackground => _prefs.getString('subBackground') ?? 'shadow';
   int get subLift => _prefs.getInt('subLift') ?? 90;
+  /// Minutes without a key press before the screensaver; 0 = never.
+  int get screensaverMinutes => _prefs.getInt('screensaver') ?? 5;
   /// Intros and recaps: 'button' (offer Skip), 'auto' (skip them), 'off'.
   String get skipSegments => _prefs.getString('skipSegments') ?? 'button';
   Future<void> setString(String key, String v) async {

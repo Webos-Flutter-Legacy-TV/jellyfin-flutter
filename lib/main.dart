@@ -11,6 +11,7 @@ import 'screens/connect_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/users_screen.dart';
+import 'screensaver.dart';
 import 'session.dart';
 import 'theme.dart';
 
@@ -108,6 +109,7 @@ class JellyfinTvApp extends StatelessWidget {
       title: 'Jellyfin TV',
       debugShowCheckedModeBanner: false,
       theme: buildTheme(),
+      builder: (context, child) => Screensaver(session: session, child: child!),
       home: ListenableBuilder(
         listenable: session,
         builder: (context, _) {
