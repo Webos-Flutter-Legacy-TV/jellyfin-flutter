@@ -225,11 +225,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   List<Widget> _account() => [
+        _row('Switch user', '${_s.current!.accounts.length} signed in on this TV', '', () {
+          Navigator.of(context).popUntil((r) => r.isFirst);
+          _s.chooseUser();
+        }),
+        _row('Add user', 'Sign in another user; both stay signed in', '', () {
+          Navigator.of(context).popUntil((r) => r.isFirst);
+          _s.addUser();
+        }),
         _row('Change server', 'Back to the server list; you stay signed in here', '', () {
           Navigator.of(context).popUntil((r) => r.isFirst);
           _s.leaveServer();
         }),
-        _row('Sign out', 'You will need Quick Connect or your password again', '', () async {
+        _row('Sign out', 'Remove ${_s.current!.userName ?? 'this user'} from this TV', '', () async {
           final ok = await confirmPanel(context, title: 'Sign out?', detail: 'You will need Quick Connect or your password to sign in again.', confirm: 'Sign out');
           if (!ok || !mounted) return;
           Navigator.of(context).popUntil((r) => r.isFirst);

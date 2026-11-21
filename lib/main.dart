@@ -10,6 +10,7 @@ import 'screens/player_screen.dart';
 import 'screens/connect_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/users_screen.dart';
 import 'session.dart';
 import 'theme.dart';
 
@@ -114,7 +115,8 @@ class JellyfinTvApp extends StatelessWidget {
           // A key per state rebuilds the page when it changes.
           final s = session.current;
           if (s == null) return ConnectScreen(key: const ValueKey('connect'), session: session);
-          if (!s.signedIn) return LoginScreen(key: ValueKey('login-${s.id}'), session: session);
+          if (session.addingUser || s.accounts.isEmpty) return LoginScreen(key: ValueKey('login-${s.id}-${session.addingUser}'), session: session);
+          if (session.choosingUser || !s.signedIn) return UsersScreen(key: ValueKey('users-${s.id}'), session: session);
           return HomeScreen(key: ValueKey('home-${s.id}-${s.userId}'), session: session);
         },
       ),

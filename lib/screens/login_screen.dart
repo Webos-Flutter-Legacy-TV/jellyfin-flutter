@@ -25,6 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool? _qcEnabled;
   String? _qcError, _formError;
   bool _busy = false;
+  List<Map<String, dynamic>> _public = [];
   Timer? _poll;
 
   JellyfinClient get _client => widget.session.client!;
@@ -32,8 +33,11 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    _user.text = widget.session.current?.userName ?? '';
+    _user.text = widget.session.addingUser ? '' : (widget.session.current?.userName ?? '');
     _startQuickConnect();
+    _client.publicUsers().then((u) {
+      if (mounted) setState(() => _public = u);
+    }).catchError((_) {});
   }
 
   @override
@@ -80,6 +84,17 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  /// A user picked from the server's list: no password → straight in; else type it.
+  void _pickUser(Map<String, dynamic> u) {
+    _user.text = '${u['Name'] ?? ''}';
+    if (u['HasPassword'] == false) {
+      _pass.clear();
+      _signIn();
+    } else {
+      _passNode.requestFocus();
+    }
+  }
+
   Future<void> _signIn() async {
     if (_busy || _user.text.trim().isEmpty) return;
     setState(() {
@@ -105,7 +120,13 @@ class _LoginScreenState extends State<LoginScreen> {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) widget.session.leaveServer();
+        if (didPop) return;
+        // Adding a user: back to "Who's watching?"; else back to the server list.
+        if (widget.session.addingUser && (widget.session.current?.accounts.isNotEmpty ?? false)) {
+          widget.session.cancelAddUser();
+        } else {
+          widget.session.leaveServer();
+        }
       },
       child: Scaffold(
         resizeToAvoidBottomInset: false,
@@ -140,7 +161,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ]),
               ),
               const SizedBox(height: 32),
-              Text('Back returns to the server list. Forgot your password? Ask the server\'s administrator.', style: tv(21, color: Palette.text3)),
+              Text('Back returns to ${widget.session.addingUser && (widget.session.current?.accounts.isNotEmpty ?? false) ? 'the users on this TV' : 'the server list'}. Forgot your password? Ask the server\'s administrator.', style: tv(21, color: Palette.text3)),
             ]),
           ),
         ]),
@@ -219,6 +240,25 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             Text('User name and password', style: tv(34, weight: FontWeight.w600)),
             const SizedBox(height: 24),
+            if (_public.isNotEmpty) ...[
+              Wrap(spacing: 12, runSpacing: 12, children: [
+                for (final u in _public.take(8))
+                  TvFocusable(
+                    ensureVisible: false,
+                    onPressed: () => _pickUser(u),
+                    builder: (context, focused) => Container(
+                      padding: const EdgeInsets.fromLTRB(8, 8, 20, 8),
+                      decoration: BoxDecoration(color: focused ? Colors.white : Palette.surfaceRaised, borderRadius: BorderRadius.circular(999)),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        CircleAvatar(radius: 22, backgroundColor: const Color(0xFF7A4FB5), child: Text('${u['Name'] ?? '?'}'.characters.first.toUpperCase(), style: tv(20, weight: FontWeight.w700))),
+                        const SizedBox(width: 12),
+                        Text('${u['Name'] ?? ''}', style: tv(22, weight: FontWeight.w600, color: focused ? Palette.ground : Colors.white)),
+                      ]),
+                    ),
+                  ),
+              ]),
+              const SizedBox(height: 20),
+            ],
             TvTextField(controller: _user, label: 'User', hint: 'Name', onSubmitted: (_) => _passNode.requestFocus()),
             const SizedBox(height: 20),
             TvTextField(controller: _pass, label: 'Password', hint: 'Password', obscure: true, focusNode: _passNode, action: TextInputAction.done, onSubmitted: (_) => _signIn()),

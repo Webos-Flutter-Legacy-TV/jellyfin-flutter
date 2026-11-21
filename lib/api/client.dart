@@ -100,6 +100,9 @@ class JellyfinClient {
   Future<AuthResult> authenticateWithQuickConnect(String secret) async =>
       AuthResult.fromJson(await post('/Users/AuthenticateWithQuickConnect', body: {'Secret': secret}));
 
+  /// Users the server shows on sign-in pages (empty when it hides them).
+  Future<List<Map<String, dynamic>>> publicUsers() async => (((await get('/Users/Public')) as List?) ?? const []).cast<Map<String, dynamic>>();
+
   Future<UserDto> me() async => UserDto.fromJson(await get('/Users/Me'));
 
   /// The user's server-side preferences (audio / subtitle language, subtitle mode, …).
