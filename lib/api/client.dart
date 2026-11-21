@@ -158,6 +158,9 @@ class JellyfinClient {
   Future<void> setFavorite(String id, bool fav) =>
       fav ? post('/UserFavoriteItems/$id', query: {'userId': userId}) : delete('/UserFavoriteItems/$id', query: {'userId': userId});
 
+  Future<void> refreshMetadata(String id) => post('/Items/$id/Refresh', query: {'metadataRefreshMode': 'Default', 'imageRefreshMode': 'Default'});
+  Future<void> deleteItem(String id) => delete('/Items/$id');
+
   String? personImage(Map<String, dynamic> person, {int size = 168}) {
     final tag = person['PrimaryImageTag'] as String?;
     final id = person['Id'] as String?;

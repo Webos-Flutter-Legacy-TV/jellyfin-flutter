@@ -9,6 +9,7 @@ import '../nav.dart';
 import '../session.dart';
 import '../theme.dart';
 import '../ui/cards.dart';
+import 'panels.dart';
 import '../ui/tv.dart';
 
 class DetailsScreen extends StatefulWidget {
@@ -70,6 +71,18 @@ class _DetailsScreenState extends State<DetailsScreen> {
     });
     final eps = await _client.episodes(_item!.id, seasonId: id).catchError((_) => <Item>[]);
     if (mounted && _seasonId == id) setState(() => _episodes = eps);
+  }
+
+  Future<void> _refresh() async {
+    try {
+      final fresh = await _client.item(widget.item.id);
+      if (mounted) setState(() => _item = fresh);
+    } on ApiException catch (_) {}
+  }
+
+  Future<void> _tracks(Item i, int tab) async {
+    await showTracksPanel(context, widget.session, i, startTab: tab);
+    if (mounted) setState(() {});
   }
 
   Future<void> _toggle({required bool played}) async {
@@ -179,14 +192,25 @@ class _DetailsScreenState extends State<DetailsScreen> {
         const SizedBox(width: 16),
         PillButton(icon: i.userData.isFavorite ? Icons.favorite : Icons.favorite_border, tooltip: 'Favourite', height: 76, onPressed: () => _toggle(played: false)),
         const SizedBox(width: 16),
-        PillButton(icon: Icons.more_horiz, tooltip: 'More', height: 76, onPressed: () => openMoreMenu(context, widget.session, i)),
+        PillButton(
+          icon: Icons.more_horiz,
+          tooltip: 'More',
+          height: 76,
+          onPressed: () => showMoreMenu(context, widget.session, i,
+              onChanged: _refresh,
+              openRelated: (x) => openItem(context, widget.session, x),
+              playFromStart: () => openPlayer(context, widget.session, i, fromStart: true)),
+        ),
       ];
 
   // ---- movie / episode -----------------------------------------------------------------------
 
   Widget _movieTop(Item i) {
     final resumable = i.userData.playbackPositionTicks > 0;
-    final audio = i.stream('Audio'), sub = i.stream('Subtitle');
+    // What the user picked in the panel, else what the server picks for them.
+    final choice = widget.session.trackChoices[i.id];
+    final audio = choice?.audio != null ? i.streams('Audio').where((s) => s['Index'] == choice!.audio).firstOrNull : i.stream('Audio');
+    final sub = choice?.subtitle != null ? i.streams('Subtitle').where((s) => s['Index'] == choice!.subtitle).firstOrNull : i.stream('Subtitle');
     final tagline = i.taglines.firstOrNull;
     return SizedBox(
       height: 900,
@@ -224,9 +248,9 @@ class _DetailsScreenState extends State<DetailsScreen> {
             top: 560,
             width: 640,
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              if (audio != null) _trackTile(Icons.graphic_eq, 'Audio', shortTrackName(audio), () => openTracks(context, widget.session, i)),
+              if (audio != null) _trackTile(Icons.graphic_eq, 'Audio', shortTrackName(audio), () => _tracks(i, 0)),
               const SizedBox(height: 14),
-              _trackTile(Icons.closed_caption_outlined, 'Subtitles', sub == null ? 'Off' : shortTrackName(sub), () => openTracks(context, widget.session, i)),
+              _trackTile(Icons.closed_caption_outlined, 'Subtitles', sub == null ? 'Off' : shortTrackName(sub), () => _tracks(i, 1)),
               if (i.studios.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 14, left: 6), child: Text(i.studios.take(2).join(' · '), style: tv(19, color: Palette.text3))),
             ]),
           ),

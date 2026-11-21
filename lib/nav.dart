@@ -35,13 +35,6 @@ void openPlayer(BuildContext context, Session session, Item item, {bool fromStar
   Navigator.of(context).push(tvRoute(_Placeholder(title: item.name, what: 'Player')));
 }
 
-void openMoreMenu(BuildContext context, Session session, Item item) {
-  Navigator.of(context).push(tvRoute(_Placeholder(title: item.name, what: 'More menu')));
-}
-
-void openTracks(BuildContext context, Session session, Item item) {
-  Navigator.of(context).push(tvRoute(_Placeholder(title: item.name, what: 'Audio and subtitles')));
-}
 
 void openSearch(BuildContext context, Session session) {
   Navigator.of(context).push(tvRoute(SearchScreen(session: session)));

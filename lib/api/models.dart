@@ -102,6 +102,13 @@ class Item {
     return streams.where((s) => s['Type'] == type && s['Index'] == index).firstOrNull;
   }
 
+  /// All streams of one type in the first media source.
+  List<Map<String, dynamic>> streams(String type) {
+    final sources = (raw['MediaSources'] as List?) ?? const [];
+    if (sources.isEmpty) return const [];
+    return (((sources.first as Map)['MediaStreams'] as List?) ?? const []).cast<Map<String, dynamic>>().where((s) => s['Type'] == type).toList();
+  }
+
   bool get isEpisode => type == 'Episode';
   bool get isSeries => type == 'Series';
   bool get isFolderish => raw['IsFolder'] == true;

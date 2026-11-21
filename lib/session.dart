@@ -112,6 +112,14 @@ class Session extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Audio / subtitle picked for an item this session (stream indexes; -1 subtitle = off).
+  final Map<String, ({int? audio, int? subtitle})> trackChoices = {};
+  void chooseTracks(String itemId, {int? audio, int? subtitle}) {
+    final old = trackChoices[itemId];
+    trackChoices[itemId] = (audio: audio ?? old?.audio, subtitle: subtitle ?? old?.subtitle);
+    notifyListeners();
+  }
+
   List<String> get recentSearches => _prefs.getStringList('recentSearches') ?? const [];
   Future<void> addRecentSearch(String q) async {
     final t = q.trim();
