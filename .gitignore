@@ -1,0 +1,11 @@
+# Upstream repositories cloned for reference (toolchain, plugins, Jellyfin clients)
+.ref/
+
+# Flutter / Dart
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.iml
+.idea/
