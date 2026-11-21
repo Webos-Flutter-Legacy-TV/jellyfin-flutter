@@ -25,6 +25,26 @@ Map<String, dynamic> webosDeviceProfile({int maxBitrate = 120000000}) => {
       ],
       'ContainerProfiles': [],
       'CodecProfiles': [
+        // webOS before 25 shows Dolby Vision only from MP4 / TS: a DV file in MKV would play
+        // as its HDR10 base. Such files are remuxed (video copied, tagged dvh1) into fMP4 HLS.
+        {
+          'Type': 'Video',
+          'Container': '-mp4,ts',
+          'Codec': 'hevc',
+          'Conditions': [
+            {'Condition': 'EqualsAny', 'Property': 'VideoRangeType', 'Value': 'SDR|HDR10|HDR10Plus|HLG', 'IsRequired': false},
+          ],
+        },
+        // DV profiles 5 and 8 play as DV. Profile 7 (dual layer, UHD Blu-ray) is not listed:
+        // the server then strips its DV layer and the TV shows the HDR10 base, as LG TVs
+        // cannot decode profile 7.
+        {
+          'Type': 'Video',
+          'Codec': 'hevc',
+          'Conditions': [
+            {'Condition': 'EqualsAny', 'Property': 'VideoRangeType', 'Value': 'SDR|HDR10|HDR10Plus|HLG|DOVI|DOVIWithHDR10|DOVIWithHLG|DOVIWithSDR|DOVIWithHDR10Plus', 'IsRequired': false},
+          ],
+        },
         {
           'Type': 'Video',
           'Codec': 'h264',
