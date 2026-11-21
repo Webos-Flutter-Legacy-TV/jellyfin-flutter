@@ -137,7 +137,9 @@ class MediaCard extends StatelessWidget {
             width: width,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              boxShadow: focused ? focusShadow() : const [BoxShadow(color: Color(0x59000000), blurRadius: 18, offset: Offset(0, 8))],
+              // No resting drop shadow: an 18 px blur under every card cost the TV's GPU more than
+              // any other part of a frame and is all but invisible on the dark background.
+              boxShadow: focused ? focusShadow() : null,
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(14),

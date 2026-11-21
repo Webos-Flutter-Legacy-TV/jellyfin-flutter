@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'api/remote.dart';
 import 'dev_autoplay.dart';
 import 'nav.dart';
+import 'perf_probe.dart';
 import 'screens/native_player_screen.dart';
 import 'screens/player_screen.dart';
 
@@ -19,6 +20,7 @@ import 'theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  startPerfProbe();
   final session = await Session.load();
   remoteControl = RemoteControl(session);
   _listenToRemote(session, remoteControl!);
