@@ -153,9 +153,9 @@ class _HeroSection extends StatelessWidget {
     final badges = mediaBadges(i);
     final title = i.isEpisode ? (i.seriesName ?? i.name) : i.name;
     return SizedBox(
-      height: 740,
+      height: 820,
       child: Stack(children: [
-        if (backdrop != null) Positioned(left: 560, top: 0, right: 0, height: 740, child: NetImage(backdrop, cacheWidth: 1360)),
+        if (backdrop != null) Positioned(left: 560, top: 0, right: 0, height: 820, child: NetImage(backdrop, cacheWidth: 1360)),
         const Positioned.fill(
           child: DecoratedBox(
             decoration: BoxDecoration(gradient: LinearGradient(colors: [Palette.ground, Color(0xBF0B0D12), Color(0x000B0D12)], stops: [0.3, 0.48, 0.75])),
