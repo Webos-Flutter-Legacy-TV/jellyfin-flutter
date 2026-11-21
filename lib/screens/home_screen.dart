@@ -49,14 +49,24 @@ class _HomeScreenState extends State<HomeScreen> {
       final views = await _client.userViews();
       final results = await Future.wait([_client.resume(), _client.nextUp()]);
       final resume = results[0], nextUp = results[1];
-      final media = views.where((v) => v.collectionType == 'movies' || v.collectionType == 'tvshows').toList();
+      // The user's Home layout from the official clients (Settings › Home), else their default order.
+      final order = await _homeOrder();
+      final config = await _client.userConfiguration().catchError((_) => <String, dynamic>{});
+      final latestExcludes = ((config['LatestItemsExcludes'] as List?) ?? const []).cast<String>().toSet();
+      final media = views.where((v) => (v.collectionType == 'movies' || v.collectionType == 'tvshows') && !latestExcludes.contains(v.id)).toList();
       final latest = await Future.wait(media.map((v) => _client.latest(v.id).catchError((_) => <Item>[])));
       final sections = <_Section>[
-        if (resume.isNotEmpty) _Section('Continue watching', resume, landscape: true),
-        if (nextUp.isNotEmpty) _Section('Next up', nextUp, landscape: true),
-        for (var i = 0; i < media.length; i++)
-          if (latest[i].isNotEmpty) _Section('Recently added in ${media[i].name}', latest[i]),
-        if (views.isNotEmpty) _Section('My media', views, landscape: true),
+        for (final key in order)
+          ...switch (key) {
+            'smalllibrarytiles' || 'librarybuttons' => [if (views.isNotEmpty) _Section('My media', views, landscape: true)],
+            'resume' => [if (resume.isNotEmpty) _Section('Continue watching', resume, landscape: true)],
+            'nextup' => [if (nextUp.isNotEmpty) _Section('Next up', nextUp, landscape: true)],
+            'latestmedia' => [
+                for (var i = 0; i < media.length; i++)
+                  if (latest[i].isNotEmpty) _Section('Recently added in ${media[i].name}', latest[i]),
+              ],
+            _ => <_Section>[], // music, books, live TV: not in this app yet
+          },
       ];
       Item? hero = resume.isNotEmpty ? resume.first : (latest.isNotEmpty && latest.first.isNotEmpty ? latest.first.first : null);
       if (hero != null) {
@@ -82,6 +92,18 @@ class _HomeScreenState extends State<HomeScreen> {
           _loading = false;
         });
       }
+    }
+  }
+
+  static const _defaultOrder = ['smalllibrarytiles', 'resume', 'resumeaudio', 'resumebook', 'livetv', 'nextup', 'latestmedia', 'none'];
+
+  Future<List<String>> _homeOrder() async {
+    try {
+      final j = await _client.get('/DisplayPreferences/usersettings', {'userId': _client.userId, 'client': 'emby'}) as Map<String, dynamic>;
+      final prefs = (j['CustomPrefs'] as Map<String, dynamic>?) ?? const {};
+      return [for (var i = 0; i < 10; i++) (prefs['homesection$i'] as String?) ?? (i < _defaultOrder.length ? _defaultOrder[i] : 'none')];
+    } catch (_) {
+      return _defaultOrder;
     }
   }
 
