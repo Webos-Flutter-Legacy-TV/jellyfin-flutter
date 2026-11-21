@@ -36,11 +36,10 @@ dependencies:
   shared_preferences: ^2.3.2
   video_player: ^2.9.0
   # webOS implementation, from the Webos-Flutter-Legacy-TV plugins (fork with fixes for older webOS)
+  # Webos-Flutter-Legacy-TV/plugins (a6310ed) with one fix: exported video windows are
+  # reused instead of destroyed, so a second video plays (packages/video_player_webos/FIX.md).
   video_player_webos:
-    git:
-      url: https://github.com/Webos-Flutter-Legacy-TV/plugins.git
-      ref: main
-      path: packages/video_player
+    path: packages/video_player_webos
   path_provider: ^2.1.4
   path_provider_webos:
     git:

@@ -530,11 +530,9 @@ packages:
   video_player_webos:
     dependency: "direct main"
     description:
-      path: "packages/video_player"
-      ref: main
-      resolved-ref: a6310ed41e8b55b7caae96c3625a39e9c3fe543f
-      url: "https://github.com/Webos-Flutter-Legacy-TV/plugins.git"
-    source: git
+      path: "packages/video_player_webos"
+      relative: true
+    source: path
     version: "1.0.0"
   vm_service:
     dependency: transitive
