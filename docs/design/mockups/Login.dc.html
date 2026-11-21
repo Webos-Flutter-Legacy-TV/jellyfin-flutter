@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sign in</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#4cc3ee}a:hover{color:#7fd4f3}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #0b0d12; color: #ffffff; font-family: Inter, Roboto, sans-serif">
+  <div aria-hidden="true" style="position: absolute; inset: -80px; display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 22px; transform: rotate(-8deg) scale(1.15); opacity: 0.32">
+    <sc-for list="{{wall}}" as="t" hint-placeholder-count="27">
+      <div style="height: 300px; border-radius: 14px; background: {{t.c}}"></div>
+    </sc-for>
+  </div>
+  <div aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(90deg, rgba(11,13,18,0.96) 0%, rgba(11,13,18,0.9) 45%, rgba(11,13,18,0.7) 100%)"></div>
+  <div style="position: relative; height: 100%; box-sizing: border-box; padding: 110px 140px; display: flex; flex-direction: column; gap: 56px">
+    <div style="display: flex; flex-direction: column; gap: 14px">
+      <span style="font-size: 22px; font-weight: 600; color: #4cc3ee; letter-spacing: 2px">HOME SERVER</span>
+      <h1 style="margin: 0; font-size: 64px; font-weight: 700; letter-spacing: -1px">Sign in</h1>
+    </div>
+    <div style="display: grid; grid-template-columns: minmax(0, 1fr) 90px minmax(0, 1fr); align-items: stretch">
+      <section style="background: rgba(21,25,34,0.9); border-radius: 28px; padding: 52px; display: flex; flex-direction: column; gap: 24px; border: 3px solid #ffffff; box-shadow: 0 0 0 8px rgba(0,164,220,0.25), 0 30px 80px rgba(0,0,0,0.5)">
+        <div style="display: flex; align-items: center; gap: 16px">
+          <svg aria-hidden="true" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#4cc3ee" stroke-width="2"><rect x="6" y="2" width="12" height="20" rx="2.5"></rect><path d="M11 18 H13"></path></svg>
+          <h2 style="margin: 0; font-size: 34px; font-weight: 600">Quick Connect</h2>
+          <span style="margin-left: auto; font-size: 20px; font-weight: 600; color: #001b26; background: #00a4dc; padding: 6px 14px; border-radius: 999px">Recommended</span>
+        </div>
+        <p style="margin: 0; font-size: 25px; color: rgba(255,255,255,0.72); line-height: 1.5">On your phone or computer, open Jellyfin, go to your profile, then Quick Connect, and enter:</p>
+        <div style="display: flex; gap: 14px; margin: 8px 0">
+          <sc-for list="{{code}}" as="d" hint-placeholder-count="6">
+            <span style="width: 92px; height: 120px; border-radius: 16px; background: #0f1218; border: 2px solid #2c3345; display: flex; align-items: center; justify-content: center; font-size: 64px; font-weight: 700; font-variant-numeric: tabular-nums">{{d}}</span>
+          </sc-for>
+        </div>
+        <div style="display: flex; align-items: center; gap: 14px; font-size: 22px; color: rgba(255,255,255,0.65)">
+          <span style="width: 14px; height: 14px; border-radius: 50%; background: #00a4dc; box-shadow: 0 0 0 6px rgba(0,164,220,0.25)"></span>
+          Waiting for approval · signs in by itself
+        </div>
+      </section>
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: rgba(255,255,255,0.5); font-size: 22px; font-weight: 600">
+        <span style="width: 2px; flex: 1; background: rgba(255,255,255,0.12)"></span>
+        OR
+        <span style="width: 2px; flex: 1; background: rgba(255,255,255,0.12)"></span>
+      </div>
+      <section style="background: rgba(21,25,34,0.75); border-radius: 28px; padding: 52px; display: flex; flex-direction: column; gap: 22px; border: 1px solid rgba(255,255,255,0.06)">
+        <h2 style="margin: 0; font-size: 34px; font-weight: 600">User name and password</h2>
+        <label style="display: flex; flex-direction: column; gap: 10px; font-size: 22px; color: rgba(255,255,255,0.7)">User
+          <input value="" placeholder="Name" style="height: 80px; border-radius: 16px; border: 2px solid #2c3345; background: #0f1218; color: #ffffff; font: inherit; font-size: 27px; padding: 0 26px; box-sizing: border-box">
+        </label>
+        <label style="display: flex; flex-direction: column; gap: 10px; font-size: 22px; color: rgba(255,255,255,0.7)">Password
+          <input type="password" value="" placeholder="Password" style="height: 80px; border-radius: 16px; border: 2px solid #2c3345; background: #0f1218; color: #ffffff; font: inherit; font-size: 27px; padding: 0 26px; box-sizing: border-box">
+        </label>
+        <label style="display: flex; align-items: center; gap: 14px; font-size: 24px; color: rgba(255,255,255,0.8)">
+          <input type="checkbox" checked="checked" style="width: 30px; height: 30px; accent-color: #00a4dc">
+          Stay signed in on this TV
+        </label>
+        <button style="height: 80px; border-radius: 16px; border: none; background: #262c3b; color: #ffffff; font: inherit; font-size: 27px; font-weight: 600; margin-top: 6px">Sign in</button>
+      </section>
+    </div>
+    <p style="margin: 0; font-size: 21px; color: rgba(255,255,255,0.5)">Your server lists no users on this screen. Forgot your password? Ask the server's administrator.</p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+const hues = ['#3b4a6b','#6b3b3b','#2f5d50','#5d4a2f','#4a2f5d','#2f4d5d','#5d2f45','#4d5d2f','#2f3b5d'];
+const wall = [];
+for (let i = 0; i < 27; i++) wall.push({ c: hues[(i * 4) % hues.length] });
+return { wall, code: ['1','8','1','1','8','7'] };
+}
+}
+</script>
+</body>
+</html>

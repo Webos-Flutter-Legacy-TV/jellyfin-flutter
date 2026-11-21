@@ -1,0 +1,26 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-11-21T02:00:00Z"},
+  "title": "Jellyfin TV mockups",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1920, "h": 1080, "title": "1 · Connect to server"},
+    "Login.dc.html": {"x": 2000, "y": 0, "w": 1920, "h": 1080, "title": "2 · Sign in (Quick Connect + password)"},
+    "Home.dc.html": {"x": 4000, "y": 0, "w": 1920, "h": 1080, "title": "3 · Home"},
+    "Library.dc.html": {"x": 0, "y": 1200, "w": 1920, "h": 1080, "title": "4 · Library (Movies)"},
+    "MovieDetails.dc.html": {"x": 2000, "y": 1200, "w": 1920, "h": 1080, "title": "5 · Movie details"},
+    "SeriesDetails.dc.html": {"x": 4000, "y": 1200, "w": 1920, "h": 1080, "title": "6 · Series: seasons and episodes"},
+    "Player.dc.html": {"x": 0, "y": 2400, "w": 1920, "h": 1080, "title": "7 · Player controls"},
+    "Tracks.dc.html": {"x": 2000, "y": 2400, "w": 1920, "h": 1080, "title": "8 · Player: audio and subtitles"},
+    "MoreMenu.dc.html": {"x": 4000, "y": 2400, "w": 1920, "h": 1080, "title": "9 · More menu"},
+    "Search.dc.html": {"x": 0, "y": 3600, "w": 1920, "h": 1080, "title": "10 · Search"},
+    "Settings.dc.html": {"x": 2000, "y": 3600, "w": 1920, "h": 1080, "title": "11 · Settings"}
+  },
+  "order": ["Main.dc.html", "Login.dc.html", "Home.dc.html", "Library.dc.html", "MovieDetails.dc.html", "SeriesDetails.dc.html", "Player.dc.html", "Tracks.dc.html", "MoreMenu.dc.html", "Search.dc.html", "Settings.dc.html"],
+  "notes": {
+    "title": {"x": 0, "y": -320, "text": "Jellyfin TV for webOS: the official app's screens, made premium", "kind": "title1", "maxW": 5920},
+    "how": {"x": 6000, "y": 0, "w": 560, "text": "1920×1080, the TV's UI size. Same screens, order and data as the official app (jellyfin-web TV layout), Jellyfin blue #00a4dc kept as the accent. New: artwork-led pages (backdrops, title logos), near-black ground #0b0d12 with raised surfaces, Inter type, a focused card that lifts with a white ring and blue glow, badges instead of raw stream names, side panels instead of dropdowns, safe More menu. Coloured tiles stand in for the server's posters and backdrops."}
+  },
+  "designSystems": []
+}

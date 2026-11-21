@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Movies library</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#4cc3ee}a:hover{color:#7fd4f3}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #0b0d12; color: #ffffff; font-family: Inter, Roboto, sans-serif">
+  <header style="position: absolute; left: 0; top: 0; width: 1920px; height: 120px; box-sizing: border-box; padding: 0 96px; display: flex; align-items: center; gap: 28px">
+    <a href="Home.dc.html" aria-label="Back" style="width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #151922; color: #ffffff">
+      <svg aria-hidden="true" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 L8 12 L15 19"></path></svg>
+    </a>
+    <h1 style="margin: 0; font-size: 40px; font-weight: 700">Movies</h1>
+    <nav style="display: flex; gap: 8px; padding: 8px; border-radius: 999px; background: #151922; margin-left: 24px">
+      <a href="#" style="padding: 12px 26px; border-radius: 999px; background: #ffffff; color: #0b0d12; font-size: 23px; font-weight: 600; text-decoration: none">All</a>
+      <a href="#" style="padding: 12px 26px; border-radius: 999px; color: rgba(255,255,255,0.8); font-size: 23px; font-weight: 600; text-decoration: none">Suggestions</a>
+      <a href="#" style="padding: 12px 26px; border-radius: 999px; color: rgba(255,255,255,0.8); font-size: 23px; font-weight: 600; text-decoration: none">Favorites</a>
+      <a href="#" style="padding: 12px 26px; border-radius: 999px; color: rgba(255,255,255,0.8); font-size: 23px; font-weight: 600; text-decoration: none">Collections</a>
+      <a href="#" style="padding: 12px 26px; border-radius: 999px; color: rgba(255,255,255,0.8); font-size: 23px; font-weight: 600; text-decoration: none">Genres</a>
+    </nav>
+    <span style="flex: 1"></span>
+    <a href="Search.dc.html" aria-label="Search" style="width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #151922; color: #ffffff">
+      <svg aria-hidden="true" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20 L16.5 16.5"></path></svg>
+    </a>
+    <span style="font-size: 24px; font-weight: 500; color: rgba(255,255,255,0.75)">12:27</span>
+  </header>
+
+  <div style="position: absolute; left: 96px; top: 150px; width: 1640px; display: flex; align-items: center; gap: 14px">
+    <span style="font-size: 23px; color: rgba(255,255,255,0.6); margin-right: 10px">43 movies</span>
+    <button style="height: 56px; padding: 0 24px; border-radius: 999px; border: none; background: #151922; color: #ffffff; font: inherit; font-size: 22px; font-weight: 600; display: flex; align-items: center; gap: 10px">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4 L20 12 L7 20 Z"></path></svg>Play all</button>
+    <button style="height: 56px; padding: 0 24px; border-radius: 999px; border: none; background: #151922; color: #ffffff; font: inherit; font-size: 22px; font-weight: 600; display: flex; align-items: center; gap: 10px">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7 H8 L16 17 H20 M4 17 H8 L10 14.5 M14 9.5 L16 7 H20 M18 5 L20 7 L18 9 M18 15 L20 17 L18 19"></path></svg>Shuffle</button>
+    <span style="flex: 1"></span>
+    <button style="height: 56px; padding: 0 24px; border-radius: 999px; border: none; background: #151922; color: #ffffff; font: inherit; font-size: 22px; font-weight: 600">Sort: Name A–Z</button>
+    <button style="height: 56px; padding: 0 24px; border-radius: 999px; border: none; background: #151922; color: #ffffff; font: inherit; font-size: 22px; font-weight: 600">Filter: Unwatched</button>
+  </div>
+
+  <div style="position: absolute; left: 96px; top: 250px; width: 1640px; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); column-gap: 28px; row-gap: 36px">
+    <sc-for list="{{items}}" as="m" hint-placeholder-count="14">
+      <div style="display: flex; flex-direction: column; gap: 12px">
+        <div style="height: 316px; border-radius: 14px; background: {{m.bg}}; position: relative; overflow: hidden; display: flex; align-items: flex-end; padding: 18px; box-sizing: border-box; box-shadow: {{m.ring}}; transform: {{m.scale}}">
+          <span style="font-size: 22px; font-weight: 800; line-height: 1.1; color: rgba(255,255,255,0.9)">{{m.t}}</span>
+          <sc-if value="{{m.watched}}" hint-placeholder-val="{{false}}">
+            <span style="position: absolute; right: 12px; top: 12px; width: 38px; height: 38px; border-radius: 50%; background: #00a4dc; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 L10 17 L19 7"></path></svg></span>
+          </sc-if>
+          <sc-if value="{{m.hasProgress}}" hint-placeholder-val="{{false}}">
+            <span style="position: absolute; left: 0; bottom: 0; height: 6px; width: {{m.p}}; background: #00a4dc"></span>
+          </sc-if>
+        </div>
+        <span style="font-size: 22px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: {{m.tc}}">{{m.t}}</span>
+        <span style="font-size: 19px; color: rgba(255,255,255,0.55); margin-top: -6px">{{m.y}}</span>
+      </div>
+    </sc-for>
+  </div>
+
+  <nav aria-label="Jump to letter" style="position: absolute; right: 56px; top: 250px; width: 64px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 14px 0; border-radius: 999px; background: #151922; font-size: 19px; font-weight: 600; color: rgba(255,255,255,0.55)">
+    <sc-for list="{{letters}}" as="l" hint-placeholder-count="27">
+      <span style="width: 40px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: {{l.bg}}; color: {{l.c}}">{{l.k}}</span>
+    </sc-for>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+const raw = [
+  ['The Amazing Spider-Man','2012','#3d2a33',0,1],['Backrooms','2026','#6b6436',0,0],['Cold Storage','2026','#3c5a35',0,0],['Crime 101','2026','#3e4652',0,0],['Demon Slayer: Infinity Castle','2025','#4a3570',0,'15%'],['Devara: Part 1','2024','#3a3f45',0,0],['The Devil Wears Prada','2006','#6e2a2e',0,0],
+  ['The Devil Wears Prada 2','2026','#7a2f33',0,0],['The End of Oak Street','2026','#3f5a6a',0,'45%'],['Enola Holmes 3','2026','#5e4a33',1,0],['Geetha Govindam','2018','#6a4f5e',1,0],['GOAT','2026','#6a5a2a',0,0],['Hoppers','2026','#7a6420',0,0],['Kantara','2025','#6a3a25',0,0]
+];
+const items = raw.map((r, i) => ({ t: r[0], y: r[1], bg: r[2], watched: !!r[3], hasProgress: !!r[4] && r[4] !== 1, p: typeof r[4] === 'string' ? r[4] : '0%',
+  ring: i === 8 ? '0 0 0 4px #ffffff, 0 0 0 10px rgba(0,164,220,0.45), 0 24px 50px rgba(0,0,0,0.6)' : '0 10px 30px rgba(0,0,0,0.35)',
+  scale: i === 8 ? 'scale(1.06)' : 'none', tc: i === 8 ? '#ffffff' : 'rgba(255,255,255,0.8)' }));
+const keys = '#ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const letters = keys.map(k => ({ k, bg: k === 'E' ? '#00a4dc' : 'transparent', c: k === 'E' ? '#001b26' : 'rgba(255,255,255,0.55)' }));
+return { items, letters };
+}
+}
+</script>
+</body>
+</html>

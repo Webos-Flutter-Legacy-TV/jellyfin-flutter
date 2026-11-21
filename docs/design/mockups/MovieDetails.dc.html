@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Movie details</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#4cc3ee}a:hover{color:#7fd4f3}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #0b0d12; color: #ffffff; font-family: Inter, Roboto, sans-serif">
+  <div aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(160deg, #1f5f7a 0%, #2b6a6a 40%, #c9b48a 100%)">
+    <span style="position: absolute; right: 48px; top: 140px; font-size: 18px; color: rgba(255,255,255,0.4)">backdrop</span>
+  </div>
+  <div aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(90deg, rgba(11,13,18,0.97) 0%, rgba(11,13,18,0.88) 42%, rgba(11,13,18,0.35) 75%, rgba(11,13,18,0.15) 100%)"></div>
+  <div aria-hidden="true" style="position: absolute; left: 0; bottom: 0; width: 1920px; height: 420px; background: linear-gradient(0deg, #0b0d12 25%, rgba(11,13,18,0) 100%)"></div>
+
+  <header style="position: absolute; left: 0; top: 0; width: 1920px; height: 120px; box-sizing: border-box; padding: 0 96px; display: flex; align-items: center; gap: 24px">
+    <a href="Library.dc.html" aria-label="Back" style="width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(21,25,34,0.6); color: #ffffff">
+      <svg aria-hidden="true" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 L8 12 L15 19"></path></svg>
+    </a>
+    <a href="Home.dc.html" aria-label="Home" style="width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(21,25,34,0.6); color: #ffffff">
+      <svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M4 11 L12 4 L20 11 V20 H14 V14 H10 V20 H4 Z"></path></svg>
+    </a>
+    <span style="flex: 1"></span>
+    <span style="font-size: 24px; font-weight: 500; color: rgba(255,255,255,0.75)">12:27</span>
+  </header>
+
+  <section style="position: absolute; left: 96px; top: 170px; width: 1000px; display: flex; flex-direction: column; gap: 24px">
+    <div aria-label="Moana" role="img" style="height: 150px; display: flex; align-items: flex-end"><span style="font-size: 112px; font-weight: 800; letter-spacing: 6px; line-height: 1; color: #ffffff">MOANA</span></div>
+    <span style="font-size: 17px; color: rgba(255,255,255,0.45); margin-top: -14px">title logo from the server (text when there is none)</span>
+    <div style="display: flex; align-items: center; gap: 16px; font-size: 24px; color: rgba(255,255,255,0.82); flex-wrap: wrap">
+      <span>2026</span><span aria-hidden="true">·</span><span>1h 56m</span><span aria-hidden="true">·</span>
+      <span style="border: 2px solid rgba(255,255,255,0.45); border-radius: 6px; padding: 1px 8px; font-size: 20px; font-weight: 600">PG</span>
+      <span><span style="color: #f5c518">★</span> 7.5</span>
+      <span style="color: #7ad97a">33%</span>
+      <span aria-hidden="true">·</span><span>Family, Fantasy, Adventure</span>
+      <span aria-hidden="true">·</span><span>Ends at 2:23 PM</span>
+    </div>
+    <div style="display: flex; gap: 8px">
+      <sc-for list="{{badges}}" as="b" hint-placeholder-count="5">
+        <span style="font-size: 18px; font-weight: 700; letter-spacing: 0.5px; padding: 5px 12px; border-radius: 6px; background: rgba(255,255,255,0.14)">{{b}}</span>
+      </sc-for>
+    </div>
+    <p style="margin: 6px 0 0; font-size: 30px; font-weight: 600; color: rgba(255,255,255,0.92)">The ocean chose her for a reason.</p>
+    <p style="margin: 0; font-size: 25px; line-height: 1.55; color: rgba(255,255,255,0.72); max-width: 900px">Teenage Moana answers the Ocean's call and, for the first time, voyages beyond the reef of her island of Motunui with the demigod Maui on a journey to restore prosperity to her people.</p>
+    <div style="display: flex; gap: 16px; margin-top: 8px; align-items: center">
+      <a href="Player.dc.html" style="height: 76px; padding: 0 40px; border-radius: 999px; background: #ffffff; color: #0b0d12; display: flex; align-items: center; gap: 14px; font-size: 27px; font-weight: 700; text-decoration: none; box-shadow: 0 0 0 6px rgba(0,164,220,0.45), 0 18px 40px rgba(0,0,0,0.45)">
+        <svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4 L20 12 L7 20 Z"></path></svg>Play</a>
+      <button aria-label="Trailer" style="width: 76px; height: 76px; border-radius: 50%; border: none; background: rgba(255,255,255,0.14); color: #ffffff; display: flex; align-items: center; justify-content: center">
+        <svg aria-hidden="true" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M7 4 V20 M17 4 V20 M3 9 H7 M3 15 H7 M17 9 H21 M17 15 H21"></path></svg></button>
+      <button aria-label="Mark watched" style="width: 76px; height: 76px; border-radius: 50%; border: none; background: rgba(255,255,255,0.14); color: #ffffff; display: flex; align-items: center; justify-content: center">
+        <svg aria-hidden="true" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 L10 17 L19 7"></path></svg></button>
+      <button aria-label="Add to favourites" style="width: 76px; height: 76px; border-radius: 50%; border: none; background: rgba(255,255,255,0.14); color: #ffffff; display: flex; align-items: center; justify-content: center">
+        <svg aria-hidden="true" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M12 20 C5 15 3 12 3 8.5 C3 6 5 4 7.5 4 C9.5 4 11 5.5 12 7 C13 5.5 14.5 4 16.5 4 C19 4 21 6 21 8.5 C21 12 19 15 12 20 Z"></path></svg></button>
+      <a href="MoreMenu.dc.html" aria-label="More" style="width: 76px; height: 76px; border-radius: 50%; background: rgba(255,255,255,0.14); color: #ffffff; display: flex; align-items: center; justify-content: center">
+        <svg aria-hidden="true" width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg></a>
+    </div>
+  </section>
+
+  <section style="position: absolute; left: 1180px; top: 560px; width: 640px; display: flex; flex-direction: column; gap: 14px">
+    <a href="Tracks.dc.html" style="display: flex; align-items: center; gap: 18px; padding: 18px 24px; border-radius: 16px; background: rgba(21,25,34,0.82); color: #ffffff; text-decoration: none; border: 1px solid rgba(255,255,255,0.08)">
+      <svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4cc3ee" stroke-width="2" stroke-linecap="round"><path d="M4 10 V14 M8 7 V17 M12 4 V20 M16 8 V16 M20 11 V13"></path></svg>
+      <span style="display: flex; flex-direction: column; gap: 4px; flex: 1"><span style="font-size: 18px; color: rgba(255,255,255,0.55)">Audio</span><span style="font-size: 23px; font-weight: 600">English · TrueHD Atmos 7.1</span></span>
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2.4" stroke-linecap="round"><path d="M9 5 L16 12 L9 19"></path></svg>
+    </a>
+    <a href="Tracks.dc.html" style="display: flex; align-items: center; gap: 18px; padding: 18px 24px; border-radius: 16px; background: rgba(21,25,34,0.82); color: #ffffff; text-decoration: none; border: 1px solid rgba(255,255,255,0.08)">
+      <svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4cc3ee" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2.5"></rect><path d="M7 13 H11 M13 13 H17 M7 16 H14"></path></svg>
+      <span style="display: flex; flex-direction: column; gap: 4px; flex: 1"><span style="font-size: 18px; color: rgba(255,255,255,0.55)">Subtitles</span><span style="font-size: 23px; font-weight: 600">Off</span></span>
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2.4" stroke-linecap="round"><path d="M9 5 L16 12 L9 19"></path></svg>
+    </a>
+    <span style="font-size: 19px; color: rgba(255,255,255,0.5); padding-left: 6px">Directed by Thomas Kail · Walt Disney Pictures</span>
+  </section>
+
+  <section style="position: absolute; left: 96px; top: 900px; width: 1824px; display: flex; flex-direction: column; gap: 18px">
+    <h2 style="margin: 0; font-size: 30px; font-weight: 600">Cast &amp; crew</h2>
+    <div style="display: flex; gap: 30px">
+      <sc-for list="{{cast}}" as="p" hint-placeholder-count="9">
+        <div style="display: flex; align-items: center; gap: 14px; width: 300px; flex: none">
+          <span style="width: 84px; height: 84px; border-radius: 50%; background: {{p.bg}}; flex: none"></span>
+          <span style="display: flex; flex-direction: column; gap: 4px; min-width: 0"><span style="font-size: 22px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{p.n}}</span><span style="font-size: 19px; color: rgba(255,255,255,0.55)">{{p.r}}</span></span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+return {
+  badges: ['4K', 'DOLBY VISION', 'HDR10', 'ATMOS', '7.1'],
+  cast: [
+    { n: 'Catherine Laga‘aia', r: 'Moana', bg: '#6a5a4e' },
+    { n: 'Dwayne Johnson', r: 'Maui', bg: '#5a4a40' },
+    { n: 'John Tui', r: 'Chief Tui', bg: '#4e5a62' },
+    { n: 'Frankie Adams', r: 'Sina', bg: '#625a4e' },
+    { n: 'Rena Owen', r: 'Gramma Tala', bg: '#5a5462' },
+    { n: 'Thomas Kail', r: 'Director', bg: '#4e5262' }
+  ]
+};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Player controls</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#4cc3ee}a:hover{color:#7fd4f3}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: linear-gradient(140deg, #2c5a72 0%, #3e6e6a 50%, #a89470 100%); color: #ffffff; font-family: Inter, Roboto, sans-serif">
+  <span style="position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%); font-size: 20px; color: rgba(255,255,255,0.4)">video</span>
+  <div aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 1920px; height: 260px; background: linear-gradient(180deg, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0) 100%)"></div>
+  <div aria-hidden="true" style="position: absolute; left: 0; bottom: 0; width: 1920px; height: 460px; background: linear-gradient(0deg, rgba(0,0,0,0.88) 20%, rgba(0,0,0,0) 100%)"></div>
+
+  <header style="position: absolute; left: 96px; top: 60px; right: 96px; display: flex; align-items: flex-start; gap: 24px">
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <span style="font-size: 44px; font-weight: 700">Moana</span>
+      <span style="font-size: 22px; color: rgba(255,255,255,0.7)">2026 · 4K Dolby Vision · TrueHD Atmos 7.1 · Direct play</span>
+    </div>
+    <span style="flex: 1"></span>
+    <span style="font-size: 26px; font-weight: 500; color: rgba(255,255,255,0.85)">12:28</span>
+  </header>
+
+  <button style="position: absolute; right: 96px; bottom: 330px; height: 68px; padding: 0 30px; border-radius: 999px; border: 2px solid rgba(255,255,255,0.6); background: rgba(11,13,18,0.6); color: #ffffff; font: inherit; font-size: 24px; font-weight: 600; display: flex; align-items: center; gap: 12px">Skip intro
+    <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M5 5 L14 12 L5 19 Z M15 5 H18 V19 H15 Z"></path></svg></button>
+
+  <div style="position: absolute; left: 96px; right: 96px; bottom: 170px">
+    <div style="position: absolute; left: 33%; bottom: 46px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 10px">
+      <div style="width: 320px; height: 180px; border-radius: 12px; background: #4f7a7a; border: 3px solid #ffffff; box-shadow: 0 18px 40px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; font-size: 17px; color: rgba(255,255,255,0.5)">trickplay frame</div>
+      <span style="font-size: 22px; font-weight: 600; padding: 6px 14px; border-radius: 8px; background: rgba(11,13,18,0.75)">Chapter 4 · The Reef · 38:12</span>
+    </div>
+    <div style="position: relative; height: 10px; border-radius: 5px; background: rgba(255,255,255,0.25)">
+      <span style="position: absolute; left: 0; top: 0; height: 10px; width: 33%; border-radius: 5px; background: #00a4dc"></span>
+      <span style="position: absolute; left: 33%; top: 0; height: 10px; width: 9%; background: rgba(255,255,255,0.3)"></span>
+      <sc-for list="{{ticks}}" as="t" hint-placeholder-count="8">
+        <span style="position: absolute; top: 0; left: {{t}}; width: 3px; height: 10px; background: rgba(11,13,18,0.8)"></span>
+      </sc-for>
+      <span style="position: absolute; left: 33%; top: 50%; width: 30px; height: 30px; border-radius: 50%; background: #ffffff; transform: translate(-50%, -50%); box-shadow: 0 0 0 8px rgba(0,164,220,0.45)"></span>
+    </div>
+    <div style="display: flex; justify-content: space-between; margin-top: 16px; font-size: 22px; color: rgba(255,255,255,0.8); font-variant-numeric: tabular-nums">
+      <span>38:12</span><span>−1:17:29 · ends 2:24 PM</span>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 96px; right: 96px; bottom: 56px; display: flex; align-items: center">
+    <div style="display: flex; gap: 14px; flex: 1">
+      <button aria-label="Favourite" style="width: 68px; height: 68px; border-radius: 50%; border: none; background: rgba(255,255,255,0.12); color: #ffffff; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M12 20 C5 15 3 12 3 8.5 C3 6 5 4 7.5 4 C9.5 4 11 5.5 12 7 C13 5.5 14.5 4 16.5 4 C19 4 21 6 21 8.5 C21 12 19 15 12 20 Z"></path></svg></button>
+    </div>
+    <div style="display: flex; gap: 26px; align-items: center">
+      <button aria-label="Back 10 seconds" style="width: 76px; height: 76px; border-radius: 50%; border: none; background: rgba(255,255,255,0.12); color: #ffffff; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12 A8 8 0 1 0 7 5.8 M4 4 V9 H9"></path></svg></button>
+      <button aria-label="Pause" style="width: 100px; height: 100px; border-radius: 50%; border: none; background: rgba(255,255,255,0.9); color: #0b0d12; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="40" height="40" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg></button>
+      <button aria-label="Forward 30 seconds" style="width: 76px; height: 76px; border-radius: 50%; border: none; background: rgba(255,255,255,0.12); color: #ffffff; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12 A8 8 0 1 1 17 5.8 M20 4 V9 H15"></path></svg></button>
+    </div>
+    <div style="display: flex; gap: 14px; flex: 1; justify-content: flex-end">
+      <a href="Tracks.dc.html" aria-label="Subtitles" style="width: 68px; height: 68px; border-radius: 50%; background: rgba(255,255,255,0.12); color: #ffffff; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2.5"></rect><path d="M7 13 H11 M13 13 H17 M7 16 H14"></path></svg></a>
+      <a href="Tracks.dc.html" aria-label="Audio" style="width: 68px; height: 68px; border-radius: 50%; background: rgba(255,255,255,0.12); color: #ffffff; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 10 V14 M8 7 V17 M12 4 V20 M16 8 V16 M20 11 V13"></path></svg></a>
+      <button aria-label="Playback settings" style="width: 68px; height: 68px; border-radius: 50%; border: none; background: rgba(255,255,255,0.12); color: #ffffff; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M12 2 V5 M12 19 V22 M2 12 H5 M19 12 H22 M4.9 4.9 L7 7 M17 17 L19.1 19.1 M4.9 19.1 L7 17 M17 7 L19.1 4.9"></path></svg></button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() { return { ticks: ['8%', '16%', '24%', '30%', '45%', '58%', '70%', '84%'] }; }
+}
+</script>
+</body>
+</html>

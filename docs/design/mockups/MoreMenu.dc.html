@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>More menu</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#4cc3ee}a:hover{color:#7fd4f3}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: linear-gradient(160deg, #1f5f7a 0%, #2b6a6a 40%, #c9b48a 100%); color: #ffffff; font-family: Inter, Roboto, sans-serif">
+  <div aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(90deg, rgba(11,13,18,0.97) 0%, rgba(11,13,18,0.88) 42%, rgba(11,13,18,0.5) 100%)"></div>
+  <div aria-hidden="true" style="position: absolute; left: 96px; top: 190px; font-size: 112px; font-weight: 800; letter-spacing: 6px; color: rgba(255,255,255,0.35)">MOANA</div>
+  <div aria-hidden="true" style="position: absolute; inset: 0; background: rgba(0,0,0,0.45)"></div>
+  <aside style="position: absolute; right: 0; top: 0; width: 700px; height: 1080px; box-sizing: border-box; padding: 72px 56px; background: rgba(15,18,25,0.97); box-shadow: -30px 0 80px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 6px">
+    <span style="font-size: 20px; font-weight: 600; color: rgba(255,255,255,0.55); letter-spacing: 1.5px">MOANA · 2026</span>
+    <h2 style="margin: 4px 0 18px; font-size: 38px; font-weight: 700">More</h2>
+    <sc-for list="{{main}}" as="i" hint-placeholder-count="6">
+      <button style="display: flex; align-items: center; gap: 22px; height: 70px; padding: 0 22px; border-radius: 14px; border: none; font: inherit; font-size: 25px; font-weight: 500; text-align: left; background: {{i.bg}}; color: {{i.c}}">
+        <span style="width: 10px; height: 10px; border-radius: 50%; background: {{i.dot}}"></span>{{i.t}}</button>
+    </sc-for>
+    <span style="font-size: 18px; font-weight: 700; letter-spacing: 2px; color: rgba(255,255,255,0.45); margin: 22px 0 6px 22px">MANAGE</span>
+    <sc-for list="{{manage}}" as="i" hint-placeholder-count="5">
+      <button style="display: flex; align-items: center; gap: 22px; height: 62px; padding: 0 22px; border-radius: 14px; border: none; background: transparent; font: inherit; font-size: 23px; text-align: left; color: {{i.c}}">{{i.t}}</button>
+    </sc-for>
+  </aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+const off = { bg: 'transparent', c: 'rgba(255,255,255,0.9)', dot: 'rgba(255,255,255,0.3)' };
+return {
+  main: [
+    { t: 'Play from the beginning', bg: '#ffffff', c: '#0b0d12', dot: '#00a4dc' },
+    { t: 'Mark as watched', ...off },
+    { t: 'Add to favourites', ...off },
+    { t: 'Add to playlist', ...off },
+    { t: 'Add to collection', ...off },
+    { t: 'Media info', ...off }
+  ],
+  manage: [
+    { t: 'Edit metadata', c: 'rgba(255,255,255,0.75)' },
+    { t: 'Edit images', c: 'rgba(255,255,255,0.75)' },
+    { t: 'Edit subtitles', c: 'rgba(255,255,255,0.75)' },
+    { t: 'Refresh metadata', c: 'rgba(255,255,255,0.75)' },
+    { t: 'Delete media… (asks to confirm)', c: '#ff8a80' }
+  ]
+};
+}
+}
+</script>
+</body>
+</html>

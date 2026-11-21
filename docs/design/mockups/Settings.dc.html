@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Settings</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#4cc3ee}a:hover{color:#7fd4f3}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #0b0d12; color: #ffffff; font-family: Inter, Roboto, sans-serif; display: grid; grid-template-columns: 560px 1fr">
+  <aside style="background: #12151d; box-sizing: border-box; padding: 60px 40px; display: flex; flex-direction: column; gap: 8px; border-right: 1px solid rgba(255,255,255,0.06)">
+    <div style="display: flex; align-items: center; gap: 18px; padding: 0 16px 34px">
+      <span style="width: 84px; height: 84px; border-radius: 50%; background: #7a4fb5; display: flex; align-items: center; justify-content: center; font-size: 36px; font-weight: 700">S</span>
+      <span style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 32px; font-weight: 700">sostk</span><span style="font-size: 20px; color: rgba(255,255,255,0.55)">Home server · administrator</span></span>
+    </div>
+    <sc-for list="{{cats}}" as="c" hint-placeholder-count="7">
+      <a href="#" style="display: flex; align-items: center; height: 70px; padding: 0 24px; border-radius: 14px; font-size: 25px; font-weight: 600; text-decoration: none; background: {{c.bg}}; color: {{c.c}}">{{c.t}}</a>
+    </sc-for>
+  </aside>
+  <main style="box-sizing: border-box; padding: 76px 110px 0 90px; display: flex; flex-direction: column; gap: 12px">
+    <h1 style="margin: 0 0 22px; font-size: 48px; font-weight: 700">Playback</h1>
+    <sc-for list="{{rows}}" as="r" hint-placeholder-count="7">
+      <button style="display: flex; align-items: center; gap: 24px; min-height: 96px; padding: 18px 30px; border-radius: 16px; font: inherit; text-align: left; color: #ffffff; background: {{r.bg}}; border: {{r.b}}; box-shadow: {{r.ring}}">
+        <span style="display: flex; flex-direction: column; gap: 6px; flex: 1"><span style="font-size: 26px; font-weight: 600">{{r.t}}</span><span style="font-size: 20px; color: rgba(255,255,255,0.55)">{{r.h}}</span></span>
+        <span style="font-size: 24px; font-weight: 600; color: {{r.vc}}">{{r.v}}</span>
+        <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2.4" stroke-linecap="round"><path d="M9 5 L16 12 L9 19"></path></svg>
+      </button>
+    </sc-for>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+const off = { bg: 'transparent', c: 'rgba(255,255,255,0.75)' };
+const row = { bg: '#151922', b: '3px solid transparent', ring: 'none', vc: '#4cc3ee' };
+return {
+  cats: [ { t: 'Account', ...off }, { t: 'Display', ...off }, { t: 'Home screen', ...off }, { t: 'Playback', bg: '#1d2230', c: '#ffffff' }, { t: 'Subtitles', ...off }, { t: 'Quick Connect', ...off }, { t: 'About this app', ...off } ],
+  rows: [
+    { ...row, t: 'Maximum streaming quality', h: 'Higher than this is converted by the server', v: 'Auto' },
+    { ...row, t: 'Preferred audio language', h: 'Chosen first when a title has several', v: 'English', bg: '#1d2230', b: '3px solid #ffffff', ring: '0 0 0 8px rgba(0,164,220,0.3)' },
+    { ...row, t: 'Play the next episode automatically', h: 'With a countdown at the end of an episode', v: 'On' },
+    { ...row, t: 'Skip intros and recaps', h: 'From the server’s media segments', v: 'Show a button' },
+    { ...row, t: 'Audio this TV cannot play', h: 'TrueHD and DTS are converted by the server', v: 'Dolby Digital Plus' },
+    { ...row, t: 'Seek step', h: 'Left and right on the remote while playing', v: '10 s back · 30 s ahead' }
+  ]
+};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Connect to server</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#4cc3ee}a:hover{color:#7fd4f3}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; box-sizing: border-box; background: radial-gradient(1200px 700px at 78% 30%, #13233a 0%, #0b0d12 70%); color: #ffffff; font-family: Inter, Roboto, sans-serif; display: grid; grid-template-columns: 820px 1fr; gap: 120px; padding: 140px 140px 120px">
+  <div style="display: flex; flex-direction: column; gap: 36px">
+    <div style="display: flex; align-items: center; gap: 22px">
+      <svg aria-hidden="true" width="84" height="84" viewBox="0 0 100 100"><defs><linearGradient id="jf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#aa5cc3"></stop><stop offset="1" stop-color="#00a4dc"></stop></linearGradient></defs><path d="M50 8 C44 8 40 14 36 21 L10 70 C6 78 9 86 20 89 C38 94 62 94 80 89 C91 86 94 78 90 70 L64 21 C60 14 56 8 50 8 Z M50 30 C53 30 55 33 58 38 L74 68 C76 72 74 75 70 76 C58 79 42 79 30 76 C26 75 24 72 26 68 L42 38 C45 33 47 30 50 30 Z" fill="url(#jf)"></path><path d="M50 46 C52 46 53 48 55 51 L62 64 C63 66 62 67 60 68 C54 69 46 69 40 68 C38 67 37 66 38 64 L45 51 C47 48 48 46 50 46 Z" fill="url(#jf)"></path></svg>
+      <span style="font-size: 52px; font-weight: 600; letter-spacing: -0.5px">Jellyfin</span>
+    </div>
+    <h1 style="margin: 40px 0 0; font-size: 64px; font-weight: 700; letter-spacing: -1px; line-height: 1.05">Choose your server</h1>
+    <p style="margin: 0; font-size: 27px; color: rgba(255,255,255,0.68); line-height: 1.45; max-width: 700px">Servers on this network appear here on their own. Pick one, or type its address.</p>
+    <div style="display: flex; flex-direction: column; gap: 18px; margin-top: 24px">
+      <button style="display: flex; align-items: center; gap: 26px; padding: 26px 30px; border-radius: 20px; border: 3px solid #ffffff; background: #1d2230; color: #ffffff; font: inherit; text-align: left; box-shadow: 0 0 0 8px rgba(0,164,220,0.25), 0 24px 60px rgba(0,0,0,0.5); transform: scale(1.02); transform-origin: left center">
+        <span style="width: 72px; height: 72px; border-radius: 18px; background: #00a4dc; display: flex; align-items: center; justify-content: center; flex: none">
+          <svg aria-hidden="true" width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2"><rect x="3" y="4" width="18" height="6" rx="1.5"></rect><rect x="3" y="14" width="18" height="6" rx="1.5"></rect></svg>
+        </span>
+        <span style="display: flex; flex-direction: column; gap: 6px; flex: 1">
+          <span style="font-size: 32px; font-weight: 600">Home server</span>
+          <span style="font-size: 22px; color: rgba(255,255,255,0.65)">192.168.50.10:8096 · Jellyfin 12.0.0</span>
+        </span>
+        <span style="font-size: 20px; font-weight: 600; color: #4cc3ee; padding: 8px 16px; border-radius: 999px; background: rgba(0,164,220,0.16)">On this network</span>
+      </button>
+      <button style="display: flex; align-items: center; gap: 26px; padding: 26px 30px; border-radius: 20px; border: 3px solid transparent; background: #151922; color: #ffffff; font: inherit; text-align: left">
+        <span style="width: 72px; height: 72px; border-radius: 18px; background: #262c3b; display: flex; align-items: center; justify-content: center; flex: none">
+          <svg aria-hidden="true" width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2"><circle cx="12" cy="12" r="9"></circle><path d="M3 12 H21 M12 3 C15 6 15 18 12 21 C9 18 9 6 12 3"></path></svg>
+        </span>
+        <span style="display: flex; flex-direction: column; gap: 6px; flex: 1">
+          <span style="font-size: 32px; font-weight: 600">media.example.org</span>
+          <span style="font-size: 22px; color: rgba(255,255,255,0.65)">Used before · signed in as sostk</span>
+        </span>
+      </button>
+    </div>
+  </div>
+  <div style="display: flex; flex-direction: column; justify-content: center">
+    <div style="background: rgba(21,25,34,0.92); border-radius: 28px; padding: 56px; display: flex; flex-direction: column; gap: 28px; box-shadow: 0 30px 80px rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.06)">
+      <h2 style="margin: 0; font-size: 36px; font-weight: 600">Add a server</h2>
+      <label style="display: flex; flex-direction: column; gap: 12px; font-size: 22px; color: rgba(255,255,255,0.7)">Server address
+        <input value="" placeholder="192.168.1.20 or jellyfin.example.org" style="height: 84px; border-radius: 16px; border: 2px solid #2c3345; background: #0f1218; color: #ffffff; font: inherit; font-size: 28px; padding: 0 28px; box-sizing: border-box">
+      </label>
+      <p style="margin: 0; font-size: 21px; color: rgba(255,255,255,0.6); line-height: 1.5">Port 8096 and http are added when left out; https is tried first.</p>
+      <button style="height: 84px; border-radius: 16px; border: none; background: #00a4dc; color: #001b26; font: inherit; font-size: 28px; font-weight: 700">Connect</button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
