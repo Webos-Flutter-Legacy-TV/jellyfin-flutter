@@ -56,6 +56,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
   JellyfinClient get _client => widget.session.client!;
   bool get _isShows => widget.library.collectionType == 'tvshows';
   bool get _isBoxSet => widget.library.type == 'BoxSet';
+  bool get _isPlaylist => widget.library.type == 'Playlist';
+  // The Playlists library lists playlists: nothing to play from there as a whole.
+  bool get _canPlayAll => widget.library.collectionType != 'playlists';
   // A movies or shows library gets the official tabs; collections, playlists and folders a plain list.
   bool get _isLibrary => widget.library.collectionType == 'movies' || widget.library.collectionType == 'tvshows';
 
@@ -129,7 +132,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
         });
         return;
       }
-      final page = await _client.items({..._query, 'startIndex': 0, 'limit': _page, 'enableTotalRecordCount': true});
+      final page = _isPlaylist
+          ? ItemsPage.fromJson(await _client.get('/Playlists/${widget.library.id}/Items', {'userId': _client.userId, 'fields': 'PrimaryImageAspectRatio', 'enableImageTypes': 'Primary,Thumb', 'imageTypeLimit': 1, 'startIndex': 0, 'limit': 500}))
+          : await _client.items({..._query, 'startIndex': 0, 'limit': _page, 'enableTotalRecordCount': true});
       if (gen != _generation || !mounted) return;
       setState(() {
         _total = page.total;
@@ -152,7 +157,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
   void _ensurePage(int index) {
     final p = index ~/ _page;
-    if (_pages.contains(p)) return;
+    if (_pages.contains(p) || _isPlaylist) return;
     _pages.add(p);
     final gen = _generation;
     _client.items({..._query, 'startIndex': p * _page, 'limit': _page}).then((page) {
@@ -261,16 +266,16 @@ class _LibraryScreenState extends State<LibraryScreen> {
         TopHeader(
           onBack: () => Navigator.of(context).maybePop(),
           title: _genre?.name ?? widget.library.name,
-          tabs: [for (final t in tabs) HeaderTab(t.$1, () => _setTab(t.$2), selected: _tab == t.$2)],
+          tabs: tabs.length < 2 ? const [] : [for (final t in tabs) HeaderTab(t.$1, () => _setTab(t.$2), selected: _tab == t.$2)],
           onSearch: () => openSearch(context, widget.session),
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(Insets.page, 14, Insets.page + 84, 20),
           child: FocusTraversalGroup(
             child: Row(children: [
-              Text(_loading ? 'Loading…' : (rowsTab ? '' : '$_total ${showingGenres ? (_tab == _Tab.networks ? 'networks' : 'genres') : 'titles'}'), style: tv(23, color: Palette.text3)),
+              Text(_loading ? 'Loading…' : (rowsTab ? '' : '$_total ${showingGenres ? (_tab == _Tab.networks ? 'networks' : 'genres') : (widget.library.collectionType == 'playlists' ? (_total == 1 ? 'playlist' : 'playlists') : (_total == 1 ? 'title' : 'titles'))}'), style: tv(23, color: Palette.text3)),
               const SizedBox(width: 24),
-              if (!showingGenres && !rowsTab && _total > 0) ...[
+              if (!showingGenres && !rowsTab && _total > 0 && _canPlayAll) ...[
                 PillButton(label: 'Play all', icon: Icons.play_arrow_rounded, height: 56, onPressed: () => openPlayer(context, widget.session, widget.library)),
                 const SizedBox(width: 14),
                 PillButton(label: 'Shuffle', icon: Icons.shuffle, height: 56, onPressed: () => openPlayer(context, widget.session, widget.library, shuffle: true)),

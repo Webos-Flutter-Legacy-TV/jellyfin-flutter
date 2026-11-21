@@ -59,6 +59,8 @@ Future<void> openPlayer(BuildContext context, Session session, Item item, {bool 
         final at = next == null ? -1 : items.indexWhere((e) => e.id == next.id);
         if (at > 0) items = items.sublist(at);
       }
+    } else if (item.type == 'Playlist') {
+      items = ItemsPage.fromJson(await client.get('/Playlists/${item.id}/Items', {'userId': client.userId, 'limit': 500})).items;
     } else {
       final page = await client.items({
         'parentId': item.id,
