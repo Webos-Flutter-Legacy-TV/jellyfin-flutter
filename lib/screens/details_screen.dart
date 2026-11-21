@@ -23,7 +23,7 @@ class DetailsScreen extends StatefulWidget {
 
 class _DetailsScreenState extends State<DetailsScreen> {
   Item? _item;
-  List<Item> _similar = [];
+  List<Item> _similar = [], _extras = [], _trailers = [], _seasonEpisodes = [];
   // Series
   List<Item> _seasons = [];
   String? _seasonId;
@@ -44,6 +44,18 @@ class _DetailsScreenState extends State<DetailsScreen> {
     try {
       final item = await _client.item(widget.item.id);
       final similar = await _client.similar(item.id).catchError((_) => <Item>[]);
+      Future<List<Item>> list(String path) async {
+        try {
+          return ItemsPage.fromJson(await _client.get(path, {'userId': _client.userId})).items;
+        } catch (_) {
+          return <Item>[];
+        }
+      }
+      if ((item.raw['LocalTrailerCount'] as num? ?? 0) > 0) _trailers = await list('/Items/${item.id}/LocalTrailers');
+      if ((item.raw['SpecialFeatureCount'] as num? ?? 0) > 0) _extras = await list('/Items/${item.id}/SpecialFeatures');
+      if (item.isEpisode && item.seriesId != null) {
+        _seasonEpisodes = (await _client.episodes(item.seriesId!, seasonId: item.seasonId).catchError((_) => <Item>[])).where((e) => e.id != item.id).toList();
+      }
       if (item.isSeries) {
         final seasons = await _client.seasons(item.id);
         final next = (await _client.nextUp(seriesId: item.id, limit: 1, resumable: true).catchError((_) => <Item>[])).firstOrNull;
@@ -134,7 +146,17 @@ class _DetailsScreenState extends State<DetailsScreen> {
           child: ListView(padding: EdgeInsets.zero, children: [
             if (i.isSeries) _seriesTop(i) else _movieTop(i),
             if (i.people.isNotEmpty) _castRow(i),
-            if (_similar.isNotEmpty)
+            if (_seasonEpisodes.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 30),
+                child: CardRow(title: 'More from season ${i.parentIndexNumber ?? ''}'.trim(), items: _seasonEpisodes, client: _client, landscape: true, episodeNames: true, onOpen: (x) => openItem(context, widget.session, x)),
+              ),
+            if (_extras.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 30),
+                child: CardRow(title: 'Extras', items: _extras, client: _client, landscape: true, onOpen: (x) => openPlayer(context, widget.session, x)),
+              ),
+            if (_similar.isNotEmpty && !i.isEpisode)
               Padding(
                 padding: const EdgeInsets.only(top: 30, bottom: 80),
                 child: CardRow(title: 'More like this', items: _similar, client: _client, onOpen: (x) => openItem(context, widget.session, x)),
@@ -238,6 +260,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
               PillButton(label: resumable ? 'Resume' : 'Play', icon: Icons.play_arrow_rounded, primary: true, autofocus: true, onPressed: () => openPlayer(context, widget.session, i)),
               const SizedBox(width: 16),
               if (resumable) ...[PillButton(label: 'From start', icon: Icons.replay, onPressed: () => openPlayer(context, widget.session, i, fromStart: true)), const SizedBox(width: 16)],
+              if (_trailers.isNotEmpty) ...[PillButton(icon: Icons.movie_outlined, tooltip: 'Trailer', height: 76, onPressed: () => openPlayer(context, widget.session, _trailers.first, fromStart: true)), const SizedBox(width: 16)],
               ..._iconActions(i),
             ]),
           ]),

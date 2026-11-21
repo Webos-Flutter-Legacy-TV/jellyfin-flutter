@@ -139,7 +139,7 @@ class JellyfinClient {
 
   Future<Item> item(String id) async => Item(await get('/Items/$id', {
         'userId': userId,
-        'fields': 'Overview,Genres,People,Studios,MediaSources,MediaStreams,Chapters,Trickplay,Taglines,ProviderIds,ChildCount',
+        'fields': 'Overview,Genres,People,Studios,MediaSources,MediaStreams,Chapters,Trickplay,Taglines,ProviderIds,ChildCount,LocalTrailerCount,SpecialFeatureCount',
       }));
 
   Future<List<Item>> seasons(String seriesId) async =>

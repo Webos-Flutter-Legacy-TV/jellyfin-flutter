@@ -37,7 +37,7 @@ void openItem(BuildContext context, Session session, Item item) {
   Navigator.of(context).push(tvRoute(page));
 }
 
-const _playableTypes = {'Movie', 'Episode', 'Video', 'MusicVideo', 'Trailer'};
+const _playableTypes = {'Movie', 'Episode', 'Video', 'MusicVideo', 'Trailer', 'Recording', 'TvProgram'};
 
 /// Plays an item; a series, season, collection, playlist or library plays its videos in order
 /// (from the episode to watch next for a series) or shuffled.

@@ -165,8 +165,10 @@ class CardRow extends StatelessWidget {
   final bool landscape;
   final void Function(Item) onOpen;
   final void Function(Item)? onFocusItem;
+  /// Inside one series: cards titled "3. Episode name" with the runtime, not the series name.
+  final bool episodeNames;
 
-  const CardRow({super.key, required this.title, required this.items, required this.client, required this.onOpen, this.landscape = false, this.onFocusItem});
+  const CardRow({super.key, required this.title, required this.items, required this.client, required this.onOpen, this.landscape = false, this.onFocusItem, this.episodeNames = false});
 
   @override
   Widget build(BuildContext context) {
@@ -188,6 +190,8 @@ class CardRow extends StatelessWidget {
               item: items[i],
               client: client,
               landscape: landscape,
+              title: episodeNames ? '${items[i].indexNumber != null ? '${items[i].indexNumber}. ' : ''}${items[i].name}' : null,
+              subtitle: episodeNames ? (items[i].runtime == null ? '' : formatRuntime(items[i].runtime!)) : null,
               onPressed: () => onOpen(items[i]),
               onFocus: (f) {
                 if (f) onFocusItem?.call(items[i]);
