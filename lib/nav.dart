@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'api/models.dart';
 import 'screens/details_screen.dart';
 import 'screens/library_screen.dart';
+import 'screens/search_screen.dart';
 import 'session.dart';
 import 'ui/header.dart';
 import 'ui/tv.dart';
@@ -43,7 +44,7 @@ void openTracks(BuildContext context, Session session, Item item) {
 }
 
 void openSearch(BuildContext context, Session session) {
-  Navigator.of(context).push(tvRoute(const _Placeholder(title: 'Search', what: 'Search')));
+  Navigator.of(context).push(tvRoute(SearchScreen(session: session)));
 }
 
 void openSettings(BuildContext context, Session session) {

@@ -112,6 +112,13 @@ class Session extends ChangeNotifier {
     notifyListeners();
   }
 
+  List<String> get recentSearches => _prefs.getStringList('recentSearches') ?? const [];
+  Future<void> addRecentSearch(String q) async {
+    final t = q.trim();
+    if (t.isEmpty) return;
+    await _prefs.setStringList('recentSearches', [t, ...recentSearches.where((e) => e != t)].take(6).toList());
+  }
+
   /// Back to the server list (keeps the server's saved sign-in).
   Future<void> leaveServer() async {
     current = null;
