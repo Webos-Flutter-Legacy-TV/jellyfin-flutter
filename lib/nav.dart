@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'api/models.dart';
 import 'screens/details_screen.dart';
 import 'screens/library_screen.dart';
+import 'screens/player_screen.dart';
 import 'screens/search_screen.dart';
 import 'session.dart';
 import 'ui/header.dart';
@@ -32,7 +33,8 @@ void openItem(BuildContext context, Session session, Item item) {
 }
 
 void openPlayer(BuildContext context, Session session, Item item, {bool fromStart = false}) {
-  Navigator.of(context).push(tvRoute(_Placeholder(title: item.name, what: 'Player')));
+  // Series / season: the server's next episode is resolved on the details page; anything else plays itself.
+  Navigator.of(context).push(tvRoute(PlayerScreen(session: session, item: item, fromStart: fromStart)));
 }
 
 
