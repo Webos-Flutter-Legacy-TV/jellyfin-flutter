@@ -15,6 +15,7 @@ import '../api/playback.dart';
 import '../session.dart';
 import '../theme.dart';
 import '../ui/tv.dart';
+import '../ui/panel.dart';
 import 'panels.dart';
 
 class PlayerScreen extends StatefulWidget {
@@ -39,6 +40,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
   Timer? _seekCommit;
   List<({String type, Duration start, Duration end})> _segments = const [];
   bool _ended = false;
+  Item? _upNext; // the item after this one (queue, or the next episode)
+  double _speed = 1.0;
+  int? _bitrateOverride;
   final _playFocus = FocusNode();
   final _rootFocus = FocusNode();
 
@@ -74,7 +78,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
       final item = _item ?? await _client.item(widget.item.id);
       final choice = widget.session.trackChoices[item.id];
       final start = at ?? (widget.fromStart ? Duration.zero : item.position);
-      final plan = await _client.plan(item, audioIndex: choice?.audio, subtitleIndex: choice?.subtitle, start: start, maxBitrate: widget.session.maxBitrate);
+      final plan = await _client.plan(item, audioIndex: choice?.audio, subtitleIndex: choice?.subtitle, start: start, maxBitrate: _bitrateOverride ?? widget.session.maxBitrate);
       // A transcode starts where it was asked to; a direct file is seeked once open.
       final controller = VideoPlayerController.networkUrl(Uri.parse(plan.url));
       await controller.initialize();
@@ -100,7 +104,13 @@ class _PlayerScreenState extends State<PlayerScreen> {
       _client.reportStart(item, plan, start).catchError((_) {});
       _reportTimer?.cancel();
       _reportTimer = Timer.periodic(const Duration(seconds: 10), (_) => _report());
+      if (_speed != 1.0) await controller.setPlaybackSpeed(_speed);
+      // Focus starts on Pause (the page's own key handler would otherwise hold it).
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _osd) _playFocus.requestFocus();
+      });
       _segments = await _client.segments(item.id);
+      _upNext ??= await _findNext(item);
       _showOsd();
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
@@ -143,21 +153,29 @@ class _PlayerScreenState extends State<PlayerScreen> {
     ));
   }
 
-  Future<void> _finish() async {
-    if (widget.queue.isNotEmpty && mounted) {
-      _playNext(widget.queue.first, widget.queue.sublist(1));
-      return;
+  /// What plays next: the queue's next item, or (with auto-play on) the series' next episode.
+  Future<Item?> _findNext(Item item) async {
+    if (widget.queue.isNotEmpty) return widget.queue.first;
+    if (!item.isEpisode || item.seriesId == null || !widget.session.autoplayNext) return null;
+    try {
+      final j = await _client.get('/Shows/${item.seriesId}/Episodes', {'userId': _client.userId, 'startItemId': item.id, 'limit': 2, 'fields': 'Overview', 'enableImageTypes': 'Primary,Thumb', 'imageTypeLimit': 1});
+      return ItemsPage.fromJson(j).items.where((e) => e.id != item.id).firstOrNull;
+    } on ApiException catch (_) {
+      return null;
     }
-    final item = _item;
-    if (item != null && item.isEpisode && item.seriesId != null && widget.session.autoplayNext) {
-      try {
-        final j = await _client.get('/Shows/${item.seriesId}/Episodes', {'userId': _client.userId, 'startItemId': item.id, 'limit': 2, 'fields': 'Overview'});
-        final next = ItemsPage.fromJson(j).items.where((e) => e.id != item.id).firstOrNull;
-        if (next != null && mounted) {
-          _playNext(next, const []);
-          return;
-        }
-      } on ApiException catch (_) {}
+  }
+
+  void _playUpNext() {
+    final next = _upNext;
+    if (next == null || !mounted) return;
+    final rest = widget.queue.isNotEmpty ? widget.queue.sublist(1) : const <Item>[];
+    _playNext(next, rest);
+  }
+
+  Future<void> _finish() async {
+    if (_upNext != null && mounted) {
+      _playUpNext();
+      return;
     }
     if (mounted) Navigator.of(context).maybePop();
   }
@@ -291,7 +309,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
         backgroundColor: kIsWeb ? Colors.black : Colors.transparent,
         body: Focus(
           focusNode: _rootFocus,
-          autofocus: true,
+          autofocus: _video == null,
           onKeyEvent: _onKey,
           child: Stack(fit: StackFit.expand, children: [
             if (_video != null && _video!.value.isInitialized)
@@ -306,6 +324,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
               const Center(child: SizedBox(width: 64, height: 64, child: CircularProgressIndicator(strokeWidth: 5, color: Colors.white))),
             _captions(),
             if (_video != null) _skipButton(),
+            if (_video != null) _upNextCard(),
             if (_video != null)
               AnimatedOpacity(
                 opacity: _osd ? 1 : 0,
@@ -335,9 +354,86 @@ class _PlayerScreenState extends State<PlayerScreen> {
     );
   }
 
+  /// In the credits (or the last 40 s): the next item, playable at once.
+  Widget _upNextCard() {
+    final next = _upNext, item = _item;
+    if (next == null || item == null) return const SizedBox.shrink();
+    final pos = _position, dur = _duration;
+    final inCredits = _segments.any((s) => s.type == 'Outro' && pos >= s.start);
+    if (!(inCredits || (dur > Duration.zero && dur - pos < const Duration(seconds: 40)))) return const SizedBox.shrink();
+    final left = (dur - pos).inSeconds.clamp(0, 999);
+    final still = _client.landscape(next, width: 480);
+    return Positioned(
+      right: Insets.page,
+      bottom: _osd ? 330 : 90,
+      child: Container(
+        width: 560,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(color: const Color(0xEB0F1219), borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0x1FFFFFFF))),
+        child: Row(children: [
+          ClipRRect(borderRadius: BorderRadius.circular(12), child: SizedBox(width: 192, height: 108, child: still == null ? const ColoredBox(color: Palette.surfaceRaised) : Image.network(still, fit: BoxFit.cover))),
+          const SizedBox(width: 18),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('UP NEXT${widget.session.autoplayNext || widget.queue.isNotEmpty ? ' · ${left}s' : ''}', style: tv(18, weight: FontWeight.w700, color: Palette.accentText, spacing: 1.5)),
+              const SizedBox(height: 4),
+              Text(next.isEpisode ? [?next.episodeLabel, next.name].join(' · ') : next.name, style: tv(22, weight: FontWeight.w600), maxLines: 2, overflow: TextOverflow.ellipsis),
+              const SizedBox(height: 10),
+              PillButton(label: 'Play now', icon: Icons.skip_next_rounded, height: 56, autofocus: !_osd, onPressed: _playUpNext),
+            ]),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  Future<void> _openSettings() async {
+    _hideTimer?.cancel();
+    final pick = await showSidePanel<(String, num)>(
+      context,
+      builder: (context) => Padding(
+        padding: const EdgeInsets.fromLTRB(48, 70, 48, 40),
+        child: ListView(children: [
+          const PanelHeader(title: 'Playback'),
+          const PanelSection('Speed'),
+          for (final sp in const [0.5, 0.75, 1.0, 1.25, 1.5, 2.0])
+            PanelRow(title: sp == 1.0 ? 'Normal' : '${sp}x', selected: sp == _speed, autofocus: sp == _speed, onPressed: () => Navigator.of(context).pop(('speed', sp))),
+          const PanelSection('Quality'),
+          for (final (label, br) in const [('Auto', 120000000), ('40 Mbps · 4K', 40000000), ('20 Mbps · 1080p', 20000000), ('8 Mbps · 1080p', 8000000), ('4 Mbps · 720p', 4000000)])
+            PanelRow(title: label, selected: br == (_bitrateOverride ?? widget.session.maxBitrate), onPressed: () => Navigator.of(context).pop(('quality', br))),
+        ]),
+      ),
+    );
+    if (pick == null) {
+      _showOsd();
+      return;
+    }
+    if (pick.$1 == 'speed') {
+      _speed = pick.$2.toDouble();
+      await _video?.setPlaybackSpeed(_speed);
+      _showOsd();
+    } else if (pick.$2 != (_bitrateOverride ?? widget.session.maxBitrate)) {
+      _bitrateOverride = pick.$2.toInt();
+      final at = _position;
+      _stopReporting();
+      await _start(at: at);
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    final item = _item;
+    if (item == null) return;
+    try {
+      await _client.setFavorite(item.id, !item.userData.isFavorite);
+      final raw = {...item.raw, 'UserData': {...?(item.raw['UserData'] as Map<String, dynamic>?), 'IsFavorite': !item.userData.isFavorite}};
+      if (mounted) setState(() => _item = Item(raw));
+    } on ApiException catch (_) {}
+    _showOsd();
+  }
+
   Widget _skipButton() {
     final pos = _position;
-    final seg = _segments.where((s) => (s.type == 'Intro' || s.type == 'Recap' || s.type == 'Outro') && pos >= s.start && pos < s.end - const Duration(seconds: 1)).firstOrNull;
+    final seg = _segments.where((s) => (s.type == 'Intro' || s.type == 'Recap' || (s.type == 'Outro' && _upNext == null)) && pos >= s.start && pos < s.end - const Duration(seconds: 1)).firstOrNull;
     if (seg == null) return const SizedBox.shrink();
     final label = switch (seg.type) { 'Intro' => 'Skip intro', 'Recap' => 'Skip recap', _ => 'Skip credits' };
     return Positioned(
@@ -473,7 +569,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
         bottom: 56,
         child: FocusTraversalGroup(
           child: Row(children: [
-            const Expanded(child: SizedBox()),
+            Expanded(
+              child: Row(children: [
+                PillButton(icon: item.userData.isFavorite ? Icons.favorite : Icons.favorite_border, tooltip: 'Favourite', height: 68, onPressed: _toggleFavorite),
+              ]),
+            ),
             PillButton(icon: Icons.replay_10, tooltip: 'Back 10 seconds', height: 76, onPressed: () => _seekBy(Duration(seconds: -widget.session.seekBack))),
             const SizedBox(width: 26),
             PillButton(icon: v.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded, tooltip: v.isPlaying ? 'Pause' : 'Play', height: 100, primary: true, focusNode: _playFocus, autofocus: true, onPressed: _togglePlay),
@@ -484,6 +584,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 PillButton(icon: Icons.closed_caption_outlined, tooltip: 'Subtitles', height: 68, onPressed: () => _openTracks(1)),
                 const SizedBox(width: 14),
                 PillButton(icon: Icons.graphic_eq, tooltip: 'Audio', height: 68, onPressed: () => _openTracks(0)),
+                const SizedBox(width: 14),
+                PillButton(icon: Icons.tune, tooltip: 'Speed and quality', height: 68, onPressed: _openSettings),
               ]),
             ),
           ]),
