@@ -101,6 +101,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
     if (_loading || _error != null) {
       return Scaffold(
+        resizeToAvoidBottomInset: false,
         body: Column(children: [
           header,
           Expanded(
@@ -112,6 +113,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
     return Scaffold(
+        resizeToAvoidBottomInset: false,
       body: FocusTraversalGroup(
         policy: OrderedTraversalPolicy(),
         child: ListView(

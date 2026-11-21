@@ -89,6 +89,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
   Widget build(BuildContext context) {
     final choices = _choices;
     return Scaffold(
+        resizeToAvoidBottomInset: false,
       body: Container(
         decoration: const BoxDecoration(
           gradient: RadialGradient(center: Alignment(0.56, -0.45), radius: 1.1, colors: [Color(0xFF13233A), Palette.ground], stops: [0, 0.7]),

@@ -108,6 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
         if (!didPop) widget.session.leaveServer();
       },
       child: Scaffold(
+        resizeToAvoidBottomInset: false,
         body: Stack(children: [
           const Positioned.fill(child: _PosterWall()),
           const Positioned.fill(
@@ -205,6 +206,9 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ]),
+          const Spacer(),
+          // Focus starts here: a text field would open the TV keyboard at once.
+          Align(alignment: Alignment.centerLeft, child: PillButton(label: 'New code', icon: Icons.refresh, height: 68, autofocus: true, onPressed: _startQuickConnect)),
         ],
       ]),
     );
@@ -215,7 +219,7 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             Text('User name and password', style: tv(34, weight: FontWeight.w600)),
             const SizedBox(height: 24),
-            TvTextField(controller: _user, label: 'User', hint: 'Name', autofocus: true, onSubmitted: (_) => _passNode.requestFocus()),
+            TvTextField(controller: _user, label: 'User', hint: 'Name', onSubmitted: (_) => _passNode.requestFocus()),
             const SizedBox(height: 20),
             TvTextField(controller: _pass, label: 'Password', hint: 'Password', obscure: true, focusNode: _passNode, action: TextInputAction.done, onSubmitted: (_) => _signIn()),
             const SizedBox(height: 18),

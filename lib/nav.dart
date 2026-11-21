@@ -34,6 +34,7 @@ class _Placeholder extends StatelessWidget {
   const _Placeholder({required this.title, required this.what});
   @override
   Widget build(BuildContext context) => Scaffold(
+        resizeToAvoidBottomInset: false,
         body: Column(children: [
           TopHeader(onBack: () => Navigator.of(context).maybePop(), title: title),
           Expanded(child: StateMessage(title: '$what: next step', detail: 'This screen is built in the next commit.', action: PillButton(label: 'Back', autofocus: true, onPressed: () => Navigator.of(context).maybePop()))),
@@ -47,6 +48,7 @@ class _SettingsStub extends StatelessWidget {
   const _SettingsStub({required this.session});
   @override
   Widget build(BuildContext context) => Scaffold(
+        resizeToAvoidBottomInset: false,
         body: Column(children: [
           TopHeader(onBack: () => Navigator.of(context).maybePop(), title: 'Settings'),
           Expanded(
