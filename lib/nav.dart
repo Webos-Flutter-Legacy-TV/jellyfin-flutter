@@ -6,6 +6,7 @@ import 'screens/details_screen.dart';
 import 'screens/library_screen.dart';
 import 'screens/player_screen.dart';
 import 'screens/search_screen.dart';
+import 'screens/settings_screen.dart';
 import 'session.dart';
 import 'ui/header.dart';
 import 'ui/tv.dart';
@@ -43,7 +44,7 @@ void openSearch(BuildContext context, Session session) {
 }
 
 void openSettings(BuildContext context, Session session) {
-  Navigator.of(context).push(tvRoute(_SettingsStub(session: session)));
+  Navigator.of(context).push(tvRoute(SettingsScreen(session: session)));
 }
 
 class _Placeholder extends StatelessWidget {
@@ -55,36 +56,6 @@ class _Placeholder extends StatelessWidget {
         body: Column(children: [
           TopHeader(onBack: () => Navigator.of(context).maybePop(), title: title),
           Expanded(child: StateMessage(title: '$what: next step', detail: 'This screen is built in the next commit.', action: PillButton(label: 'Back', autofocus: true, onPressed: () => Navigator.of(context).maybePop()))),
-        ]),
-      );
-}
-
-/// Until Settings is built: just signing out and changing server.
-class _SettingsStub extends StatelessWidget {
-  final Session session;
-  const _SettingsStub({required this.session});
-  @override
-  Widget build(BuildContext context) => Scaffold(
-        resizeToAvoidBottomInset: false,
-        body: Column(children: [
-          TopHeader(onBack: () => Navigator.of(context).maybePop(), title: 'Settings'),
-          Expanded(
-            child: StateMessage(
-              title: session.current?.userName ?? '',
-              detail: session.current?.name,
-              action: Row(mainAxisSize: MainAxisSize.min, children: [
-                PillButton(label: 'Sign out', autofocus: true, onPressed: () {
-                  Navigator.of(context).popUntil((r) => r.isFirst);
-                  session.signOut();
-                }),
-                const SizedBox(width: 18),
-                PillButton(label: 'Change server', onPressed: () {
-                  Navigator.of(context).popUntil((r) => r.isFirst);
-                  session.leaveServer();
-                }),
-              ]),
-            ),
-          ),
         ]),
       );
 }

@@ -72,7 +72,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
       final item = _item ?? await _client.item(widget.item.id);
       final choice = widget.session.trackChoices[item.id];
       final start = at ?? (widget.fromStart ? Duration.zero : item.position);
-      final plan = await _client.plan(item, audioIndex: choice?.audio, subtitleIndex: choice?.subtitle, start: start);
+      final plan = await _client.plan(item, audioIndex: choice?.audio, subtitleIndex: choice?.subtitle, start: start, maxBitrate: widget.session.maxBitrate);
       // A transcode starts where it was asked to; a direct file is seeked once open.
       final controller = VideoPlayerController.networkUrl(Uri.parse(plan.url));
       await controller.initialize();
@@ -131,7 +131,24 @@ class _PlayerScreenState extends State<PlayerScreen> {
     _client.reportStopped(item, plan, v.value.position).catchError((_) {});
   }
 
+  /// At the end: the next episode when that setting is on, else back to where we came from.
   Future<void> _finish() async {
+    final item = _item;
+    if (item != null && item.isEpisode && item.seriesId != null && widget.session.autoplayNext) {
+      try {
+        final j = await _client.get('/Shows/${item.seriesId}/Episodes', {'userId': _client.userId, 'startItemId': item.id, 'limit': 2, 'fields': 'Overview'});
+        final next = ItemsPage.fromJson(j).items.where((e) => e.id != item.id).firstOrNull;
+        if (next != null && mounted) {
+          _stopReporting();
+          Navigator.of(context).pushReplacement(PageRouteBuilder(
+            pageBuilder: (_, _, _) => PlayerScreen(session: widget.session, item: next, fromStart: true),
+            transitionDuration: const Duration(milliseconds: 250),
+            transitionsBuilder: (_, a, _, c) => FadeTransition(opacity: a, child: c),
+          ));
+          return;
+        }
+      } on ApiException catch (_) {}
+    }
     if (mounted) Navigator.of(context).maybePop();
   }
 
@@ -204,19 +221,19 @@ class _PlayerScreenState extends State<PlayerScreen> {
       return KeyEventResult.handled;
     }
     if (k == LogicalKeyboardKey.mediaFastForward) {
-      _seekBy(const Duration(seconds: 30));
+      _seekBy(Duration(seconds: widget.session.seekForward));
       return KeyEventResult.handled;
     }
     if (k == LogicalKeyboardKey.mediaRewind) {
-      _seekBy(const Duration(seconds: -10));
+      _seekBy(Duration(seconds: -widget.session.seekBack));
       return KeyEventResult.handled;
     }
     if (!_osd) {
       // OSD hidden: Left / Right seek straight away, OK pauses, anything else shows the OSD.
       if (k == LogicalKeyboardKey.arrowLeft) {
-        _seekBy(const Duration(seconds: -10));
+        _seekBy(Duration(seconds: -widget.session.seekBack));
       } else if (k == LogicalKeyboardKey.arrowRight) {
-        _seekBy(const Duration(seconds: 30));
+        _seekBy(Duration(seconds: widget.session.seekForward));
       } else if (k == LogicalKeyboardKey.enter || k == LogicalKeyboardKey.select) {
         _togglePlay();
       } else {
@@ -395,11 +412,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
               onKeyEvent: (node, e) {
                 if (e is! KeyDownEvent && e is! KeyRepeatEvent) return KeyEventResult.ignored;
                 if (e.logicalKey == LogicalKeyboardKey.arrowLeft) {
-                  _seekBy(const Duration(seconds: -10));
+                  _seekBy(Duration(seconds: -widget.session.seekBack));
                   return KeyEventResult.handled;
                 }
                 if (e.logicalKey == LogicalKeyboardKey.arrowRight) {
-                  _seekBy(const Duration(seconds: 30));
+                  _seekBy(Duration(seconds: widget.session.seekForward));
                   return KeyEventResult.handled;
                 }
                 if (e.logicalKey == LogicalKeyboardKey.enter || e.logicalKey == LogicalKeyboardKey.select) {
@@ -447,11 +464,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
         child: FocusTraversalGroup(
           child: Row(children: [
             const Expanded(child: SizedBox()),
-            PillButton(icon: Icons.replay_10, tooltip: 'Back 10 seconds', height: 76, onPressed: () => _seekBy(const Duration(seconds: -10))),
+            PillButton(icon: Icons.replay_10, tooltip: 'Back 10 seconds', height: 76, onPressed: () => _seekBy(Duration(seconds: -widget.session.seekBack))),
             const SizedBox(width: 26),
             PillButton(icon: v.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded, tooltip: v.isPlaying ? 'Pause' : 'Play', height: 100, primary: true, focusNode: _playFocus, autofocus: true, onPressed: _togglePlay),
             const SizedBox(width: 26),
-            PillButton(icon: Icons.forward_30, tooltip: 'Forward 30 seconds', height: 76, onPressed: () => _seekBy(const Duration(seconds: 30))),
+            PillButton(icon: Icons.forward_30, tooltip: 'Forward 30 seconds', height: 76, onPressed: () => _seekBy(Duration(seconds: widget.session.seekForward))),
             Expanded(
               child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
                 PillButton(icon: Icons.closed_caption_outlined, tooltip: 'Subtitles', height: 68, onPressed: () => _openTracks(1)),

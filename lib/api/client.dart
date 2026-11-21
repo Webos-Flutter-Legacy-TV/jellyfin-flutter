@@ -91,6 +91,10 @@ class JellyfinClient {
       AuthResult.fromJson(await post('/Users/AuthenticateWithQuickConnect', body: {'Secret': secret}));
 
   Future<UserDto> me() async => UserDto.fromJson(await get('/Users/Me'));
+
+  /// The user's server-side preferences (audio / subtitle language, subtitle mode, …).
+  Future<Map<String, dynamic>> userConfiguration() async => ((await get('/Users/Me')) as Map<String, dynamic>)['Configuration'] as Map<String, dynamic>? ?? {};
+  Future<void> saveUserConfiguration(Map<String, dynamic> config) => post('/Users/Configuration', query: {'userId': userId}, body: config);
   Future<void> logout() async => post('/Sessions/Logout');
 
   // ---- browsing --------------------------------------------------------------------------------

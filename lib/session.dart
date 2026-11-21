@@ -120,6 +120,21 @@ class Session extends ChangeNotifier {
     notifyListeners();
   }
 
+  // App settings kept on this TV.
+  int get maxBitrate => _prefs.getInt('maxBitrate') ?? 120000000;
+  bool get autoplayNext => _prefs.getBool('autoplayNext') ?? true;
+  int get seekBack => _prefs.getInt('seekBack') ?? 10;
+  int get seekForward => _prefs.getInt('seekForward') ?? 30;
+  Future<void> setInt(String key, int v) async {
+    await _prefs.setInt(key, v);
+    notifyListeners();
+  }
+
+  Future<void> setBool(String key, bool v) async {
+    await _prefs.setBool(key, v);
+    notifyListeners();
+  }
+
   List<String> get recentSearches => _prefs.getStringList('recentSearches') ?? const [];
   Future<void> addRecentSearch(String q) async {
     final t = q.trim();

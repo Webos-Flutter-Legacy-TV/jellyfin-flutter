@@ -86,14 +86,15 @@ class PlaybackPlan {
 
 extension Playback on JellyfinClient {
   /// Ask the server how to play `item` with the chosen tracks, from `start`.
-  Future<PlaybackPlan> plan(Item item, {int? audioIndex, int? subtitleIndex, Duration start = Duration.zero}) async {
+  Future<PlaybackPlan> plan(Item item, {int? audioIndex, int? subtitleIndex, Duration start = Duration.zero, int maxBitrate = 120000000}) async {
     // The TV's player cannot switch audio tracks inside a file: another track than the file's
     // default goes through the server, which remuxes or converts it into HLS with that track.
     final defaultAudio = (item.stream('Audio')?['Index'] as num?)?.toInt();
     final wantsOtherAudio = audioIndex != null && defaultAudio != null && audioIndex != defaultAudio;
     final body = {
       'UserId': userId,
-      'DeviceProfile': kIsWeb ? browserDeviceProfile() : webosDeviceProfile(),
+      'DeviceProfile': kIsWeb ? browserDeviceProfile() : webosDeviceProfile(maxBitrate: maxBitrate),
+      'MaxStreamingBitrate': maxBitrate,
       'StartTimeTicks': start.inMilliseconds * ticksPerMs,
       'AudioStreamIndex': ?audioIndex,
       'SubtitleStreamIndex': ?subtitleIndex,
