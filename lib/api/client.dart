@@ -109,14 +109,14 @@ class JellyfinClient {
         'enableUserData': true,
       })).items;
 
-  Future<List<Item>> nextUp({int limit = 16, String? seriesId}) async => ItemsPage.fromJson(await get('/Shows/NextUp', {
+  Future<List<Item>> nextUp({int limit = 16, String? seriesId, bool resumable = false}) async => ItemsPage.fromJson(await get('/Shows/NextUp', {
         'userId': userId,
         'limit': limit,
         'seriesId': seriesId,
         'fields': listFields,
         'enableImageTypes': 'Primary,Backdrop,Thumb',
         'imageTypeLimit': 1,
-        'enableResumable': false,
+        'enableResumable': resumable,
         'enableUserData': true,
       })).items;
 
@@ -138,6 +138,33 @@ class JellyfinClient {
         'fields': 'Overview,Genres,People,Studios,MediaSources,MediaStreams,Chapters,Trickplay,Taglines,ProviderIds,ChildCount',
       }));
 
+  Future<List<Item>> seasons(String seriesId) async =>
+      ItemsPage.fromJson(await get('/Shows/$seriesId/Seasons', {'userId': userId, 'enableUserData': true, 'fields': 'PrimaryImageAspectRatio'})).items;
+
+  Future<List<Item>> episodes(String seriesId, {String? seasonId}) async => ItemsPage.fromJson(await get('/Shows/$seriesId/Episodes', {
+        'userId': userId,
+        'seasonId': seasonId,
+        'fields': 'Overview,PrimaryImageAspectRatio',
+        'enableUserData': true,
+        'enableImageTypes': 'Primary,Thumb',
+      })).items;
+
+  Future<List<Item>> similar(String id, {int limit = 16}) async =>
+      ItemsPage.fromJson(await get('/Items/$id/Similar', {'userId': userId, 'limit': limit, 'fields': listFields})).items;
+
+  Future<void> setPlayed(String id, bool played) =>
+      played ? post('/UserPlayedItems/$id', query: {'userId': userId}) : delete('/UserPlayedItems/$id', query: {'userId': userId});
+
+  Future<void> setFavorite(String id, bool fav) =>
+      fav ? post('/UserFavoriteItems/$id', query: {'userId': userId}) : delete('/UserFavoriteItems/$id', query: {'userId': userId});
+
+  String? personImage(Map<String, dynamic> person, {int size = 168}) {
+    final tag = person['PrimaryImageTag'] as String?;
+    final id = person['Id'] as String?;
+    if (tag == null || id == null) return null;
+    return image(id, 'Primary', tag, fillWidth: size, fillHeight: size);
+  }
+
   // ---- images ----------------------------------------------------------------------------------
 
   /// URL of an item's image sized on the server; `tag` makes it cacheable. Null when there is no tag.
@@ -147,7 +174,13 @@ class JellyfinClient {
     return uri(path, {'tag': tag, 'fillWidth': fillWidth, 'fillHeight': fillHeight, 'maxWidth': maxWidth, 'quality': quality}).toString();
   }
 
-  String? primary(Item i, {int? fillWidth, int? fillHeight}) => image(i.id, 'Primary', i.imageTags['Primary'], fillWidth: fillWidth, fillHeight: fillHeight);
+  /// Poster: the item's own, or for an episode its series' poster.
+  String? primary(Item i, {int? fillWidth, int? fillHeight}) {
+    if (i.isEpisode && i.seriesId != null && i.seriesPrimaryImageTag != null) {
+      return image(i.seriesId!, 'Primary', i.seriesPrimaryImageTag, fillWidth: fillWidth, fillHeight: fillHeight);
+    }
+    return image(i.id, 'Primary', i.imageTags['Primary'], fillWidth: fillWidth, fillHeight: fillHeight);
+  }
 
   /// A 16:9 picture for a card: the item's thumb, its backdrop, an episode's own still, or its series'.
   String? landscape(Item i, {int width = 768}) {
@@ -159,6 +192,8 @@ class JellyfinClient {
     if (i.parentBackdropItemId != null && i.parentBackdropImageTags.isNotEmpty) {
       return image(i.parentBackdropItemId!, 'Backdrop', i.parentBackdropImageTags.first, fillWidth: width, fillHeight: h);
     }
+    // Libraries (and other folders) usually have only a Primary image, already wide.
+    if (i.imageTags['Primary'] != null) return image(i.id, 'Primary', i.imageTags['Primary'], fillWidth: width, fillHeight: h);
     return null;
   }
 

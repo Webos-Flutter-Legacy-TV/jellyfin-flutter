@@ -89,18 +89,22 @@ class MediaCard extends StatelessWidget {
   final ValueChanged<bool>? onFocus;
   final bool autofocus;
   final FocusNode? focusNode;
+  final String? title, subtitle; // override the item's own lines
 
-  const MediaCard({super.key, required this.item, required this.client, this.landscape = false, double? width, this.onPressed, this.onFocus, this.autofocus = false, this.focusNode})
+  const MediaCard({super.key, required this.item, required this.client, this.landscape = false, double? width, this.onPressed, this.onFocus, this.autofocus = false, this.focusNode, this.title, this.subtitle})
       : width = width ?? (landscape ? 384 : 220);
 
   double get imageHeight => landscape ? width * 9 / 16 : width * 1.5;
 
-  String get _title => item.isEpisode && landscape ? (item.seriesName ?? item.name) : item.name;
+  // An episode's card is titled with its series (the official cards do the same).
+  String get _title => title ?? (item.isEpisode ? (item.seriesName ?? item.name) : item.name);
 
-  String? get _subtitle {
+  String? get _subtitle => subtitle ?? _defaultSubtitle;
+
+  String? get _defaultSubtitle {
     if (item.isEpisode) {
       final label = item.episodeLabel;
-      return landscape ? [?label, item.name].join(' · ') : label;
+      return [?label, item.name].join(' · ');
     }
     final ud = item.userData;
     final rt = item.runtime;

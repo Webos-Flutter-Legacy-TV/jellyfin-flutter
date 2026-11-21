@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 
 import 'api/models.dart';
+import 'screens/details_screen.dart';
 import 'session.dart';
 import 'ui/header.dart';
 import 'ui/tv.dart';
@@ -14,11 +15,28 @@ Route<T> tvRoute<T>(Widget page) => PageRouteBuilder<T>(
     );
 
 void openItem(BuildContext context, Session session, Item item) {
-  Navigator.of(context).push(tvRoute(_Placeholder(title: item.name, what: '${item.type} page')));
+  final Widget page;
+  switch (item.type) {
+    case 'Movie' || 'Episode' || 'Series' || 'Video' || 'MusicVideo':
+      page = DetailsScreen(session: session, item: item);
+    case 'Season':
+      page = DetailsScreen(session: session, item: Item({'Id': item.seriesId ?? item.id, 'Type': 'Series', 'Name': item.seriesName ?? item.name}), seasonId: item.id);
+    default:
+      page = _Placeholder(title: item.name, what: '${item.type.isEmpty ? 'Library' : item.type} page');
+  }
+  Navigator.of(context).push(tvRoute(page));
 }
 
-void openPlayer(BuildContext context, Session session, Item item) {
+void openPlayer(BuildContext context, Session session, Item item, {bool fromStart = false}) {
   Navigator.of(context).push(tvRoute(_Placeholder(title: item.name, what: 'Player')));
+}
+
+void openMoreMenu(BuildContext context, Session session, Item item) {
+  Navigator.of(context).push(tvRoute(_Placeholder(title: item.name, what: 'More menu')));
+}
+
+void openTracks(BuildContext context, Session session, Item item) {
+  Navigator.of(context).push(tvRoute(_Placeholder(title: item.name, what: 'Audio and subtitles')));
 }
 
 void openSearch(BuildContext context, Session session) {

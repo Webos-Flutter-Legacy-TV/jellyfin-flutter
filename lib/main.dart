@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'screens/connect_screen.dart';
 import 'screens/home_screen.dart';
@@ -12,13 +13,36 @@ Future<void> main() async {
   runApp(JellyfinTvApp(session: session));
 }
 
+final navigatorKey = GlobalKey<NavigatorState>();
+
+/// Back on the PC preview (Escape); on the TV the remote's Back arrives as a route pop.
+class BackIntent extends Intent {
+  const BackIntent();
+}
+
 class JellyfinTvApp extends StatelessWidget {
   final Session session;
   const JellyfinTvApp({super.key, required this.session});
 
+  // The remote's arrows move focus everywhere (Flutter's web defaults would scroll instead).
+  static final _shortcuts = <ShortcutActivator, Intent>{
+    ...WidgetsApp.defaultShortcuts,
+    const SingleActivator(LogicalKeyboardKey.arrowUp): const DirectionalFocusIntent(TraversalDirection.up),
+    const SingleActivator(LogicalKeyboardKey.arrowDown): const DirectionalFocusIntent(TraversalDirection.down),
+    const SingleActivator(LogicalKeyboardKey.arrowLeft): const DirectionalFocusIntent(TraversalDirection.left),
+    const SingleActivator(LogicalKeyboardKey.arrowRight): const DirectionalFocusIntent(TraversalDirection.right),
+    const SingleActivator(LogicalKeyboardKey.escape): const BackIntent(),
+  };
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
+      shortcuts: _shortcuts,
+      actions: {
+        ...WidgetsApp.defaultActions,
+        BackIntent: CallbackAction<BackIntent>(onInvoke: (_) => navigatorKey.currentState?.maybePop()),
+      },
       title: 'Jellyfin TV',
       debugShowCheckedModeBanner: false,
       theme: buildTheme(),

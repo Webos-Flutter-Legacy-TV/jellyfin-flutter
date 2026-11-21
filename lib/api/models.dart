@@ -83,6 +83,25 @@ class Item {
   String? get parentLogoItemId => raw['ParentLogoItemId'];
   String? get parentLogoImageTag => raw['ParentLogoImageTag'];
 
+  String? get seasonId => raw['SeasonId'];
+  List<String> get genres => ((raw['Genres'] as List?) ?? const []).cast<String>();
+  List<String> get taglines => ((raw['Taglines'] as List?) ?? const []).cast<String>();
+  List<Map<String, dynamic>> get people => ((raw['People'] as List?) ?? const []).cast<Map<String, dynamic>>();
+  List<String> get studios => ((raw['Studios'] as List?) ?? const []).map((e) => (e as Map)['Name'] as String).toList();
+  int? get childCount => (raw['ChildCount'] as num?)?.toInt();
+
+  /// The audio or subtitle stream the server picks for this user (its DefaultAudioStreamIndex /
+  /// DefaultSubtitleStreamIndex, which follow the user's language settings). Null: none / off.
+  Map<String, dynamic>? stream(String type) {
+    final sources = (raw['MediaSources'] as List?) ?? const [];
+    if (sources.isEmpty) return null;
+    final src = sources.first as Map<String, dynamic>;
+    final streams = ((src['MediaStreams'] as List?) ?? const []).cast<Map<String, dynamic>>();
+    final index = (src[type == 'Audio' ? 'DefaultAudioStreamIndex' : 'DefaultSubtitleStreamIndex'] as num?)?.toInt();
+    if (index == null || index < 0) return type == 'Audio' ? streams.where((s) => s['Type'] == 'Audio').firstOrNull : null;
+    return streams.where((s) => s['Type'] == type && s['Index'] == index).firstOrNull;
+  }
+
   bool get isEpisode => type == 'Episode';
   bool get isSeries => type == 'Series';
   bool get isFolderish => raw['IsFolder'] == true;
@@ -154,8 +173,7 @@ List<String> mediaBadges(Item i) {
       out.add('HLG');
     }
   }
-  final audio = streams.cast<Map>().where((s) => s['Type'] == 'Audio' && s['IsDefault'] == true).firstOrNull ??
-      streams.cast<Map>().where((s) => s['Type'] == 'Audio').firstOrNull;
+  final audio = i.stream('Audio');
   if (audio != null) {
     final desc = '${audio['Profile'] ?? ''} ${audio['DisplayTitle'] ?? ''}';
     if (desc.contains('Atmos')) out.add('ATMOS');
@@ -168,3 +186,39 @@ List<String> mediaBadges(Item i) {
   }
   return out;
 }
+
+/// "English · TrueHD Atmos 7.1" instead of the server's long DisplayTitle.
+String shortTrackName(Map<String, dynamic> s) {
+  final lang = s['Language'] as String?;
+  final langName = languageName(lang);
+  if (s['Type'] == 'Subtitle') {
+    final codec = '${s['Codec'] ?? ''}'.toUpperCase();
+    return [?langName, if (codec.isNotEmpty) codec == 'SUBRIP' ? 'SRT' : codec, if (s['IsForced'] == true) 'Forced'].join(' · ');
+  }
+  final codec = '${s['Codec'] ?? ''}'.toLowerCase();
+  final profile = '${s['Profile'] ?? ''}';
+  var name = const {'truehd': 'TrueHD', 'eac3': 'Dolby Digital Plus', 'ac3': 'Dolby Digital', 'dts': 'DTS', 'aac': 'AAC', 'flac': 'FLAC', 'opus': 'Opus', 'mp3': 'MP3', 'vorbis': 'Vorbis'}[codec] ?? codec.toUpperCase();
+  if (profile.contains('Atmos') || '${s['DisplayTitle']}'.contains('Atmos')) name = '$name Atmos';
+  if (codec == 'dts' && profile.contains('MA')) name = 'DTS-HD MA';
+  final ch = (s['Channels'] as num?)?.toInt() ?? 0;
+  final layout = ch >= 8 ? '7.1' : ch >= 6 ? '5.1' : ch == 2 ? 'stereo' : ch == 1 ? 'mono' : null;
+  return [?langName, [name, ?layout].join(' ')].join(' · ');
+}
+
+const _languages = {
+  'eng': 'English', 'hin': 'Hindi', 'jpn': 'Japanese', 'spa': 'Spanish', 'fre': 'French', 'fra': 'French',
+  'ger': 'German', 'deu': 'German', 'ita': 'Italian', 'kor': 'Korean', 'chi': 'Chinese', 'zho': 'Chinese',
+  'tam': 'Tamil', 'tel': 'Telugu', 'nep': 'Nepali', 'dan': 'Danish', 'swe': 'Swedish', 'nor': 'Norwegian',
+  'nob': 'Norwegian', 'fin': 'Finnish', 'dut': 'Dutch', 'nld': 'Dutch', 'por': 'Portuguese', 'rus': 'Russian',
+  'pol': 'Polish', 'tur': 'Turkish', 'ara': 'Arabic', 'heb': 'Hebrew', 'gre': 'Greek', 'ell': 'Greek',
+  'cze': 'Czech', 'ces': 'Czech', 'hun': 'Hungarian', 'rum': 'Romanian', 'ron': 'Romanian', 'tha': 'Thai',
+  'vie': 'Vietnamese', 'ind': 'Indonesian', 'may': 'Malay', 'msa': 'Malay', 'ukr': 'Ukrainian', 'bul': 'Bulgarian',
+  'hrv': 'Croatian', 'srp': 'Serbian', 'slv': 'Slovenian', 'slo': 'Slovak', 'slk': 'Slovak', 'est': 'Estonian',
+  'lav': 'Latvian', 'lit': 'Lithuanian', 'ice': 'Icelandic', 'isl': 'Icelandic', 'cat': 'Catalan', 'baq': 'Basque',
+  'eus': 'Basque', 'glg': 'Galician', 'per': 'Persian', 'fas': 'Persian', 'urd': 'Urdu', 'ben': 'Bengali',
+  'mal': 'Malayalam', 'kan': 'Kannada', 'mar': 'Marathi', 'pan': 'Punjabi', 'guj': 'Gujarati', 'fil': 'Filipino',
+  'und': 'Unknown',
+};
+
+/// "English" for "eng"; the code itself when not in the list.
+String? languageName(String? code) => code == null ? null : _languages[code.toLowerCase()] ?? code.toUpperCase();
