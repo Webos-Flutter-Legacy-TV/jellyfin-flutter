@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'api/models.dart';
 import 'screens/details_screen.dart';
+import 'screens/library_screen.dart';
 import 'session.dart';
 import 'ui/header.dart';
 import 'ui/tv.dart';
@@ -19,6 +20,8 @@ void openItem(BuildContext context, Session session, Item item) {
   switch (item.type) {
     case 'Movie' || 'Episode' || 'Series' || 'Video' || 'MusicVideo':
       page = DetailsScreen(session: session, item: item);
+    case 'CollectionFolder' || 'UserView' || 'BoxSet' || 'Folder':
+      page = LibraryScreen(session: session, library: item);
     case 'Season':
       page = DetailsScreen(session: session, item: Item({'Id': item.seriesId ?? item.id, 'Type': 'Series', 'Name': item.seriesName ?? item.name}), seasonId: item.id);
     default:
