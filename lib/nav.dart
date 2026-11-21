@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'api/models.dart';
 import 'screens/details_screen.dart';
 import 'screens/library_screen.dart';
+import 'screens/person_screen.dart';
 import 'screens/player_screen.dart';
 import 'screens/search_screen.dart';
 import 'screens/settings_screen.dart';
@@ -25,6 +26,8 @@ void openItem(BuildContext context, Session session, Item item) {
       page = DetailsScreen(session: session, item: item);
     case 'CollectionFolder' || 'UserView' || 'BoxSet' || 'Folder' || 'Playlist' || 'ManualPlaylistsFolder' || 'PlaylistsFolder':
       page = LibraryScreen(session: session, library: item);
+    case 'Person':
+      page = PersonScreen(session: session, person: item);
     case 'Season':
       page = DetailsScreen(session: session, item: Item({'Id': item.seriesId ?? item.id, 'Type': 'Series', 'Name': item.seriesName ?? item.name}), seasonId: item.id);
     default:
