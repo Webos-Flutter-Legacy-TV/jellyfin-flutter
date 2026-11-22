@@ -1,1 +1,1 @@
-Future<(String, int)?> readDevAutoplay() async => null;
+Future<(String, int, bool)?> readDevAutoplay() async => null;

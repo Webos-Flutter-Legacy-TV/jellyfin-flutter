@@ -13,6 +13,7 @@ import '../api/client.dart';
 import '../api/models.dart';
 import '../api/playback.dart';
 import '../api/remote.dart';
+import '../player/engine.dart';
 import '../screensaver.dart';
 import '../session.dart';
 import '../theme.dart';
@@ -37,7 +38,7 @@ class PlayerScreen extends StatefulWidget {
 class _PlayerScreenState extends State<PlayerScreen> {
   Item? _item;
   PlaybackPlan? _plan;
-  VideoPlayerController? _video;
+  PlaybackEngine? _video;
   String? _error;
   bool _osd = true;
   Timer? _hideTimer, _reportTimer;
@@ -79,9 +80,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
     if (v == null) return;
     switch (c.command) {
       case 'Pause':
-        if (v.value.isPlaying) _togglePlay();
+        if (v.isPlaying) _togglePlay();
       case 'Unpause':
-        if (!v.value.isPlaying) _togglePlay();
+        if (!v.isPlaying) _togglePlay();
       case 'PlayPause':
         _togglePlay();
       case 'Stop':
@@ -117,9 +118,15 @@ class _PlayerScreenState extends State<PlayerScreen> {
     super.dispose();
   }
 
-  Duration get _position => _video?.value.position ?? Duration.zero;
+  /// Video the direct-feed engine can feed (H.264 / HEVC).
+  bool _directVideo(Item item) {
+    final codec = (item.streams('Video').firstOrNull?['Codec'] as String?)?.toLowerCase();
+    return codec == 'h264' || codec == 'hevc' || codec == 'h265';
+  }
+
+  Duration get _position => _video?.position ?? Duration.zero;
   Duration get _duration {
-    final d = _video?.value.duration ?? Duration.zero;
+    final d = _video?.duration ?? Duration.zero;
     if (d > Duration.zero) return d;
     return _item?.runtime ?? Duration.zero;
   }
@@ -129,13 +136,26 @@ class _PlayerScreenState extends State<PlayerScreen> {
       final item = _item ?? await _client.item(widget.item.id);
       final choice = widget.session.trackChoices[item.id];
       final start = at ?? widget.startAt ?? (widget.fromStart ? Duration.zero : item.position);
-      final plan = await _client.plan(item, audioIndex: choice?.audio, subtitleIndex: choice?.subtitle, start: start, maxBitrate: _bitrateOverride ?? widget.session.maxBitrate);
-      // A transcode starts where it was asked to; a direct file is seeked once open.
-      final controller = VideoPlayerController.networkUrl(Uri.parse(plan.url));
+      // The direct-feed engine (Settings > Playback > Player engine) plays the file itself for H.264
+      // and HEVC; picture subtitles and other codecs stay with the TV's player and the server.
+      PlaybackPlan? plan;
+      PlaybackEngine? controller;
+      if (!kIsWeb && widget.session.nativePlayer && _bitrateOverride == null && _directVideo(item)) {
+        final d = await _client.directPlan(item, audioIndex: choice?.audio, subtitleIndex: choice?.subtitle);
+        if (!d.imageSubtitle) {
+          plan = d.plan;
+          controller = DirectFeedEngine(plan.url, startAt: start, audioStream: plan.audioIndex);
+        }
+      }
+      if (controller == null) {
+        plan = await _client.plan(item, audioIndex: choice?.audio, subtitleIndex: choice?.subtitle, start: start, maxBitrate: _bitrateOverride ?? widget.session.maxBitrate);
+        controller = TvPlayerEngine(plan.url);
+      }
       await controller.initialize();
-      if (plan.method == PlayMethod.directPlay && start > Duration.zero) await controller.seekTo(start);
-      if (plan.subtitleUrl != null) {
-        controller.setClosedCaptionFile(http.get(Uri.parse(plan.subtitleUrl!)).then<ClosedCaptionFile>((r) => WebVTTCaptionFile(r.body)));
+      // A transcode starts where it was asked to; the TV's player opens a direct file at 0 and is seeked.
+      if (controller is TvPlayerEngine && plan!.method == PlayMethod.directPlay && start > Duration.zero) await controller.seekTo(start);
+      if (plan!.subtitleUrl != null) {
+        controller.setCaptions(http.get(Uri.parse(plan.subtitleUrl!)).then<ClosedCaptionFile>((r) => WebVTTCaptionFile(r.body)));
       }
       controller.addListener(_onTick);
       final old = _video;
@@ -150,12 +170,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
         _error = null;
       });
       old?.removeListener(_onTick);
-      await old?.dispose();
+      old?.dispose();
       await controller.play();
       _client.reportStart(item, plan, start).catchError((_) {});
       _reportTimer?.cancel();
       _reportTimer = Timer.periodic(const Duration(seconds: 10), (_) => _report());
-      if (_speed != 1.0) await controller.setPlaybackSpeed(_speed);
+      if (_speed != 1.0) await controller.setSpeed(_speed);
       // Focus starts on Pause (the page's own key handler would otherwise hold it).
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _osd) _playFocus.requestFocus();
@@ -172,9 +192,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   void _onTick() {
-    final v = _video?.value;
+    final v = _video;
     if (v == null || !mounted) return;
-    if (!_ended && v.isInitialized && v.duration > Duration.zero && v.position >= v.duration - const Duration(milliseconds: 600) && !v.isPlaying) {
+    if (!_ended && v.completed) {
       _ended = true;
       _finish();
       return;
@@ -201,14 +221,14 @@ class _PlayerScreenState extends State<PlayerScreen> {
   void _report() {
     final item = _item, plan = _plan, v = _video;
     if (item == null || plan == null || v == null) return;
-    _client.reportProgress(item, plan, v.value.position, paused: !v.value.isPlaying).catchError((_) {});
+    _client.reportProgress(item, plan, v.position, paused: !v.isPlaying).catchError((_) {});
   }
 
   void _stopReporting() {
     final item = _item, plan = _plan, v = _video;
     _reportTimer?.cancel();
     if (item == null || plan == null || v == null) return;
-    _client.reportStopped(item, plan, v.value.position).catchError((_) {});
+    _client.reportStopped(item, plan, v.position).catchError((_) {});
   }
 
   /// At the end: the next episode when that setting is on, else back to where we came from.
@@ -258,7 +278,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
         if (mounted && !(_playFocus.hasFocus)) _playFocus.requestFocus();
       });
     }
-    if (!keep && (_video?.value.isPlaying ?? false)) {
+    if (!keep && (_video?.isPlaying ?? false)) {
       _hideTimer = Timer(const Duration(seconds: 5), () {
         if (mounted && _seekTarget == null) {
           setState(() => _osd = false);
@@ -271,7 +291,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   void _togglePlay() {
     final v = _video;
     if (v == null) return;
-    if (v.value.isPlaying) {
+    if (v.isPlaying) {
       v.pause();
       _showOsd(keep: true);
     } else {
@@ -313,7 +333,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     if (e is! KeyDownEvent && e is! KeyRepeatEvent) return KeyEventResult.ignored;
     final k = e.logicalKey;
     // The remote's media buttons work whether the controls show or not.
-    if (k == LogicalKeyboardKey.mediaPlayPause || (k == LogicalKeyboardKey.mediaPlay && !(_video?.value.isPlaying ?? true)) || (k == LogicalKeyboardKey.mediaPause && (_video?.value.isPlaying ?? false))) {
+    if (k == LogicalKeyboardKey.mediaPlayPause || (k == LogicalKeyboardKey.mediaPlay && !(_video?.isPlaying ?? true)) || (k == LogicalKeyboardKey.mediaPause && (_video?.isPlaying ?? false))) {
       _togglePlay();
       return KeyEventResult.handled;
     }
@@ -352,7 +372,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
       }
       return KeyEventResult.handled;
     }
-    _showOsd(keep: !(_video?.value.isPlaying ?? false));
+    _showOsd(keep: !(_video?.isPlaying ?? false));
     return KeyEventResult.ignored;
   }
 
@@ -395,15 +415,14 @@ class _PlayerScreenState extends State<PlayerScreen> {
           autofocus: _video == null,
           onKeyEvent: _onKey,
           child: Stack(fit: StackFit.expand, children: [
-            if (_video != null && _video!.value.isInitialized)
-              Center(child: AspectRatio(aspectRatio: _video!.value.aspectRatio, child: VideoPlayer(_video!))),
+            if (_video != null && _video!.initialized) _video!.view(),
             if (_video == null && _error == null) const ColoredBox(color: Colors.black, child: StateMessage(title: 'Starting…', loading: true)),
             if (_error != null)
               ColoredBox(
                 color: Palette.ground,
                 child: StateMessage(title: 'Could not play this', detail: _error, action: PillButton(label: 'Back', autofocus: true, onPressed: () => Navigator.of(context).maybePop())),
               ),
-            if (_video?.value.isBuffering == true && _osd == false)
+            if (_video?.isBuffering == true && _osd == false)
               const Center(child: SizedBox(width: 64, height: 64, child: CircularProgressIndicator(strokeWidth: 5, color: Colors.white))),
             _captions(),
             if (_video != null) _skipButton(),
@@ -421,7 +440,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   Widget _captions() {
-    final text = _video?.value.caption.text ?? '';
+    final text = _video?.captionText ?? '';
     if (text.isEmpty) return const SizedBox.shrink();
     final lift = widget.session.subLift.toDouble();
     return Positioned(
@@ -488,7 +507,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     }
     if (pick.$1 == 'speed') {
       _speed = pick.$2.toDouble();
-      await _video?.setPlaybackSpeed(_speed);
+      await _video?.setSpeed(_speed);
       _showOsd();
     } else if (pick.$2 != (_bitrateOverride ?? widget.session.maxBitrate)) {
       _bitrateOverride = pick.$2.toInt();
@@ -544,11 +563,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
   Widget _controls() {
     final item = _item, plan = _plan;
     if (item == null || plan == null) return const SizedBox.shrink();
-    final v = _video!.value;
+    final v = _video!;
     final shown = _seekTarget ?? v.position;
     final dur = _duration;
     final frac = dur.inMilliseconds == 0 ? 0.0 : (shown.inMilliseconds / dur.inMilliseconds).clamp(0.0, 1.0);
-    final buffered = v.buffered.isEmpty ? 0.0 : (v.buffered.last.end.inMilliseconds / (dur.inMilliseconds == 0 ? 1 : dur.inMilliseconds)).clamp(0.0, 1.0);
+    final bufferedEnd = v.bufferedEnd;
+    final buffered = bufferedEnd == null ? 0.0 : (bufferedEnd.inMilliseconds / (dur.inMilliseconds == 0 ? 1 : dur.inMilliseconds)).clamp(0.0, 1.0);
     final chapters = ((item.raw['Chapters'] as List?) ?? const []).cast<Map<String, dynamic>>();
     final chapterTicks = [for (final c in chapters) ((c['StartPositionTicks'] as num?) ?? 0).toInt() ~/ 10000];
     String? chapterName;

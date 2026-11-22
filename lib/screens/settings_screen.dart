@@ -208,8 +208,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         setState(() {});
       }),
       if (!kIsWeb)
-        _row('Player engine', 'Direct feed plays files without the server converting them (test)', _s.nativePlayer ? 'Direct feed (test)' : 'TV player', () async {
-          final v = await _choose('Player engine', const [('TV player', false), ('Direct feed (test)', true)], _s.nativePlayer);
+        _row('Player engine', 'Direct feed plays 4K HDR, Dolby Vision, DTS and TrueHD files without the server converting them', _s.nativePlayer ? 'Direct feed' : 'TV player', () async {
+          final v = await _choose('Player engine', const [('TV player', false), ('Direct feed', true)], _s.nativePlayer);
           if (v != null) await _s.setBool('nativePlayer', v);
           setState(() {});
         }),

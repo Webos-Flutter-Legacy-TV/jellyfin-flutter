@@ -159,6 +159,59 @@ extension Playback on JellyfinClient {
     return PlaybackPlan(url: url, method: method, playSessionId: session, mediaSourceId: msid, mediaSource: src, audioIndex: audio, subtitleIndex: sub, subtitleUrl: subUrl);
   }
 
+  /// For the direct-feed engine (packages/webos_native_player), which reads the file itself and
+  /// decodes any audio: always the file as it is. The server is still asked, for the play session,
+  /// the default tracks (the user's language preferences) and text subtitles as WebVTT.
+  /// `imageSubtitle` is set when the chosen subtitle is a picture format (PGS, VobSub), which this
+  /// engine cannot draw yet.
+  Future<({PlaybackPlan plan, bool imageSubtitle})> directPlan(Item item, {int? audioIndex, int? subtitleIndex}) async {
+    final body = {
+      'UserId': userId,
+      'DeviceProfile': {
+        'Name': 'Jellyfin Flutter TV (direct feed)',
+        'MaxStreamingBitrate': 1000000000,
+        'MaxStaticBitrate': 1000000000,
+        'DirectPlayProfiles': [{'Type': 'Video'}],
+        'TranscodingProfiles': const [],
+        'SubtitleProfiles': [
+          for (final f in ['vtt', 'srt', 'subrip', 'ass', 'ssa', 'mov_text', 'text']) {'Format': f, 'Method': 'External'},
+          for (final f in ['pgssub', 'dvdsub', 'dvbsub']) {'Format': f, 'Method': 'Embed'},
+        ],
+      },
+      'AudioStreamIndex': ?audioIndex,
+      'SubtitleStreamIndex': ?subtitleIndex,
+      'EnableDirectPlay': true,
+      'EnableDirectStream': false,
+      'EnableTranscoding': false,
+      'AutoOpenLiveStream': true,
+    };
+    final res = await post('/Items/${item.id}/PlaybackInfo', query: {'userId': userId}, body: body) as Map<String, dynamic>;
+    final sources = (res['MediaSources'] as List?) ?? const [];
+    if (sources.isEmpty) throw ApiException('The server offered no way to play this.');
+    final src = sources.first as Map<String, dynamic>;
+    final session = res['PlaySessionId'] as String? ?? '';
+    final msid = src['Id'] as String;
+    final audio = audioIndex ?? (src['DefaultAudioStreamIndex'] as num?)?.toInt();
+    final sub = subtitleIndex ?? (src['DefaultSubtitleStreamIndex'] as num?)?.toInt();
+    final url = uri('/Videos/${item.id}/stream', {'static': true, 'mediaSourceId': msid, 'playSessionId': session, 'deviceId': deviceId, keyParam: token}).toString();
+    String? subUrl;
+    var image = false;
+    if (sub != null && sub >= 0) {
+      final stream = ((src['MediaStreams'] as List?) ?? const []).cast<Map<String, dynamic>>().where((s) => s['Index'] == sub).firstOrNull;
+      if (stream != null) {
+        if (stream['IsTextSubtitleStream'] == true || stream['DeliveryMethod'] == 'External') {
+          subUrl = uri('/Videos/${item.id}/$msid/Subtitles/$sub/0/Stream.vtt', {keyParam: token}).toString();
+        } else {
+          image = true;
+        }
+      }
+    }
+    return (
+      plan: PlaybackPlan(url: url, method: PlayMethod.directPlay, playSessionId: session, mediaSourceId: msid, mediaSource: src, audioIndex: audio, subtitleIndex: sub, subtitleUrl: subUrl),
+      imageSubtitle: image,
+    );
+  }
+
   Map<String, dynamic> _report(Item item, PlaybackPlan p, Duration position, {bool paused = false}) => {
         'ItemId': item.id,
         'MediaSourceId': p.mediaSourceId,

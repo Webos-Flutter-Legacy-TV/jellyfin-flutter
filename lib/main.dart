@@ -7,7 +7,6 @@ import 'api/remote.dart';
 import 'dev_autoplay.dart';
 import 'nav.dart';
 import 'perf_probe.dart';
-import 'screens/native_player_screen.dart';
 import 'screens/player_screen.dart';
 
 import 'screens/connect_screen.dart';
@@ -35,9 +34,10 @@ Future<void> _devAutoplay(Session session) async {
   final nav = navigatorKey.currentState;
   final client = session.client;
   if (nav == null || client == null) return;
+  if (req.$3) await session.setBool('nativePlayer', true);
   try {
     final item = await client.item(req.$1);
-    nav.push(tvRoute(NativePlayerScreen(session: session, item: item, startAt: Duration(milliseconds: req.$2))));
+    nav.push(tvRoute(PlayerScreen(session: session, item: item, startAt: Duration(milliseconds: req.$2))));
   } catch (_) {}
 }
 

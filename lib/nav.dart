@@ -1,5 +1,4 @@
 // Where each item, button and tab goes. Screens not built yet show a placeholder page.
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import 'api/models.dart';
@@ -7,7 +6,6 @@ import 'screens/details_screen.dart';
 import 'screens/favorites_screen.dart';
 import 'screens/library_screen.dart';
 import 'screens/person_screen.dart';
-import 'screens/native_player_screen.dart';
 import 'screens/player_screen.dart';
 import 'screens/search_screen.dart';
 import 'screens/settings_screen.dart';
@@ -46,10 +44,6 @@ const _playableTypes = {'Movie', 'Episode', 'Video', 'MusicVideo', 'Trailer', 'R
 Future<void> openPlayer(BuildContext context, Session session, Item item, {bool fromStart = false, bool shuffle = false}) async {
   final nav = Navigator.of(context);
   if (_playableTypes.contains(item.type) && !shuffle) {
-    if (!kIsWeb && session.nativePlayer) {
-      nav.push(tvRoute(NativePlayerScreen(session: session, item: item, fromStart: fromStart)));
-      return;
-    }
     nav.push(tvRoute(PlayerScreen(session: session, item: item, fromStart: fromStart)));
     return;
   }
