@@ -137,15 +137,19 @@ class _PlayerScreenState extends State<PlayerScreen> {
       final choice = widget.session.trackChoices[item.id];
       final start = at ?? widget.startAt ?? (widget.fromStart ? Duration.zero : item.position);
       // The direct-feed engine (Settings > Playback > Player engine) plays the file itself for H.264
-      // and HEVC; picture subtitles and other codecs stay with the TV's player and the server.
+      // and HEVC; other codecs stay with the TV's player and the server. Picture subtitles (PGS,
+      // VobSub) are not drawn by it yet: it plays without them rather than handing the file to the
+      // TV's player, which shows Dolby Vision as HDR.
       PlaybackPlan? plan;
       PlaybackEngine? controller;
       if (!kIsWeb && widget.session.nativePlayer && _bitrateOverride == null && _directVideo(item)) {
         final d = await _client.directPlan(item, audioIndex: choice?.audio, subtitleIndex: choice?.subtitle);
-        if (!d.imageSubtitle) {
-          plan = d.plan;
-          controller = DirectFeedEngine(plan.url, startAt: start, audioStream: plan.audioIndex);
-        }
+        final p = d.plan;
+        plan = d.imageSubtitle
+            ? PlaybackPlan(url: p.url, method: p.method, playSessionId: p.playSessionId, mediaSourceId: p.mediaSourceId, mediaSource: p.mediaSource, audioIndex: p.audioIndex, subtitleIndex: -1)
+            : p;
+        controller = DirectFeedEngine(plan.url, startAt: start, audioStream: plan.audioIndex);
+        if (d.imageSubtitle) _showNote('Picture subtitles (PGS) are not supported yet: playing without subtitles', seconds: 6);
       }
       if (controller == null) {
         plan = await _client.plan(item, audioIndex: choice?.audio, subtitleIndex: choice?.subtitle, start: start, maxBitrate: _bitrateOverride ?? widget.session.maxBitrate);
@@ -211,9 +215,14 @@ class _PlayerScreenState extends State<PlayerScreen> {
     if (seg == null || !_autoSkipped.add(seg.start)) return;
     _video?.seekTo(seg.end);
     _report();
-    _skippedNote = seg.type == 'Intro' ? 'Skipped intro' : 'Skipped recap';
+    _showNote(seg.type == 'Intro' ? 'Skipped intro' : 'Skipped recap');
+  }
+
+  /// A short message over the video (e.g. "Skipped intro").
+  void _showNote(String text, {int seconds = 3}) {
+    if (mounted) setState(() => _skippedNote = text);
     _noteTimer?.cancel();
-    _noteTimer = Timer(const Duration(seconds: 3), () {
+    _noteTimer = Timer(Duration(seconds: seconds), () {
       if (mounted) setState(() => _skippedNote = null);
     });
   }
