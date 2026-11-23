@@ -24,6 +24,25 @@ class TvFocusable extends StatefulWidget {
 
 class _TvFocusableState extends State<TvFocusable> {
   bool _focused = false;
+  FocusNode? _ownNode;
+  FocusNode get _node => widget.focusNode ?? (_ownNode ??= FocusNode());
+  // Focus that came from the Magic Remote pointer: no scrolling to centre the
+  // element, or the row would slide away from under the pointer.
+  bool _fromPointer = false;
+
+  @override
+  void dispose() {
+    _ownNode?.dispose();
+    super.dispose();
+  }
+
+  // onHover fires only when the pointer itself moves, not when content scrolls
+  // under a resting pointer, so remote-key navigation is not disturbed.
+  void _onHover(PointerHoverEvent e) {
+    if (_node.hasFocus || !_node.canRequestFocus) return;
+    _fromPointer = true;
+    _node.requestFocus();
+  }
 
   KeyEventResult _onKey(FocusNode node, KeyEvent e) {
     if (e is! KeyDownEvent || widget.onPressed == null) return KeyEventResult.ignored;
@@ -42,17 +61,19 @@ class _TvFocusableState extends State<TvFocusable> {
       child = AnimatedScale(scale: _focused ? widget.scale : 1.0, duration: const Duration(milliseconds: 140), curve: Curves.easeOut, child: child);
     }
     return Focus(
-      focusNode: widget.focusNode,
+      focusNode: _node,
       autofocus: widget.autofocus,
       onKeyEvent: _onKey,
       onFocusChange: (f) {
         setState(() => _focused = f);
         widget.onFocus?.call(f);
-        if (f && widget.ensureVisible) {
+        final fromPointer = _fromPointer;
+        _fromPointer = false;
+        if (f && widget.ensureVisible && !fromPointer) {
           Scrollable.ensureVisible(context, alignment: 0.5, alignmentPolicy: ScrollPositionAlignmentPolicy.explicit, duration: const Duration(milliseconds: 220), curve: Curves.easeOut);
         }
       },
-      child: GestureDetector(onTap: widget.onPressed, child: child),
+      child: MouseRegion(onHover: _onHover, child: GestureDetector(onTap: widget.onPressed, child: child)),
     );
   }
 }

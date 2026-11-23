@@ -7,6 +7,7 @@ import '../api/models.dart';
 import '../theme.dart';
 import 'image_cache.dart';
 import 'tv.dart';
+import 'edge_scroll.dart';
 
 /// A network image that fades in and shows a tinted placeholder (with the title) until then.
 class NetImage extends StatelessWidget {
@@ -185,7 +186,8 @@ class CardRow extends StatelessWidget {
       SizedBox(
         height: imgH + 110,
         child: FocusTraversalGroup(
-          child: ListView.separated(
+          child: EdgeScroll(builder: (context, controller) => ListView.separated(
+            controller: controller,
             scrollDirection: Axis.horizontal,
             clipBehavior: Clip.none,
             padding: const EdgeInsets.symmetric(horizontal: Insets.page, vertical: 14),
@@ -202,7 +204,7 @@ class CardRow extends StatelessWidget {
                 if (f) onFocusItem?.call(items[i]);
               },
             ),
-          ),
+          )),
         ),
       ),
     ]);

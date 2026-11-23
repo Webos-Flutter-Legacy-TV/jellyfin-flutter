@@ -11,6 +11,7 @@ import '../theme.dart';
 import '../ui/cards.dart';
 import 'panels.dart';
 import '../ui/tv.dart';
+import '../ui/edge_scroll.dart';
 
 class DetailsScreen extends StatefulWidget {
   final Session session;
@@ -346,7 +347,8 @@ class _DetailsScreenState extends State<DetailsScreen> {
         SizedBox(
           height: 70,
           child: FocusTraversalGroup(
-            child: ListView(
+            child: EdgeScroll(builder: (context, controller) => ListView(
+              controller: controller,
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: Insets.page),
               clipBehavior: Clip.none,
@@ -354,7 +356,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                 for (final s in _seasons)
                   Padding(padding: const EdgeInsets.only(right: 12), child: _seasonPill(s)),
               ],
-            ),
+            )),
           ),
         ),
       const SizedBox(height: 18),
@@ -363,14 +365,15 @@ class _DetailsScreenState extends State<DetailsScreen> {
         child: _episodes.isEmpty
             ? const Center(child: SizedBox(width: 48, height: 48, child: CircularProgressIndicator(strokeWidth: 4, color: Palette.accent)))
             : FocusTraversalGroup(
-                child: ListView.separated(
+                child: EdgeScroll(builder: (context, controller) => ListView.separated(
+                  controller: controller,
                   scrollDirection: Axis.horizontal,
                   clipBehavior: Clip.none,
                   padding: const EdgeInsets.symmetric(horizontal: Insets.page, vertical: 14),
                   itemCount: _episodes.length,
                   separatorBuilder: (_, _) => const SizedBox(width: 30),
                   itemBuilder: (context, n) => _episodeCard(_episodes[n]),
-                ),
+                )),
               ),
       ),
       SizedBox(
@@ -440,7 +443,8 @@ class _DetailsScreenState extends State<DetailsScreen> {
         SizedBox(
           height: 124,
           child: FocusTraversalGroup(
-            child: ListView.separated(
+            child: EdgeScroll(builder: (context, controller) => ListView.separated(
+              controller: controller,
               scrollDirection: Axis.horizontal,
               clipBehavior: Clip.none,
               padding: const EdgeInsets.symmetric(horizontal: Insets.page, vertical: 12),
@@ -473,7 +477,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   ),
                 );
               },
-            ),
+            )),
           ),
         ),
       ]),

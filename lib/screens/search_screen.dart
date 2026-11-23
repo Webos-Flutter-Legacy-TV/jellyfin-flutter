@@ -12,6 +12,7 @@ import '../session.dart';
 import '../theme.dart';
 import '../ui/cards.dart';
 import '../ui/tv.dart';
+import '../ui/edge_scroll.dart';
 
 class SearchScreen extends StatefulWidget {
   final Session session;
@@ -221,7 +222,8 @@ class _SearchScreenState extends State<SearchScreen> {
         const SizedBox(height: 16),
         SizedBox(
           height: 120,
-          child: ListView.separated(
+          child: EdgeScroll(builder: (context, controller) => ListView.separated(
+            controller: controller,
             scrollDirection: Axis.horizontal,
             clipBehavior: Clip.none,
             padding: const EdgeInsets.symmetric(horizontal: Insets.page, vertical: 12),
@@ -244,7 +246,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 ]),
               );
             },
-          ),
+          )),
         ),
       ]);
 }
