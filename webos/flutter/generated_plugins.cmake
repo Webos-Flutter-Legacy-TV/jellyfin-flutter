@@ -3,9 +3,9 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  webos_native_player
   shared_preferences_webos
   video_player_webos
-  webos_native_player
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
