@@ -159,7 +159,7 @@ extension Playback on JellyfinClient {
     return PlaybackPlan(url: url, method: method, playSessionId: session, mediaSourceId: msid, mediaSource: src, audioIndex: audio, subtitleIndex: sub, subtitleUrl: subUrl);
   }
 
-  /// For the direct-feed engine (packages/webos_native_player), which reads the file itself and
+  /// For the direct-feed engine (the webos_native_player plugin), which reads the file itself and
   /// decodes any audio: always the file as it is. The server is still asked, for the play session,
   /// the default tracks (the user's language preferences) and text subtitles as WebVTT.
   /// `imageSubtitle` is set when the chosen subtitle is a picture format (PGS, VobSub), which this

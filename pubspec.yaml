@@ -40,9 +40,12 @@ dependencies:
   # reused instead of destroyed, so a second video plays (packages/video_player_webos/FIX.md).
   video_player_webos:
     path: packages/video_player_webos
-  # Direct-feed player (our own; LG StarfishMediaAPIs + bundled FFmpeg), on test.
+  # Direct-feed player (LG StarfishMediaAPIs + bundled FFmpeg), from the plugins repository.
   webos_native_player:
-    path: packages/webos_native_player
+    git:
+      url: https://github.com/Webos-Flutter-Legacy-TV/plugins.git
+      ref: main
+      path: packages/webos_native_player
   path_provider: ^2.1.4
   path_provider_webos:
     git:

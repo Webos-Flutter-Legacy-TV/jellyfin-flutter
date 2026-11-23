@@ -570,8 +570,10 @@ packages:
     dependency: "direct main"
     description:
       path: "packages/webos_native_player"
-      relative: true
-    source: path
+      ref: main
+      resolved-ref: "9094fb71e7999306c587b54935a2cb2174353064"
+      url: "https://github.com/Webos-Flutter-Legacy-TV/plugins.git"
+    source: git
     version: "0.1.0"
   xdg_directories:
     dependency: transitive

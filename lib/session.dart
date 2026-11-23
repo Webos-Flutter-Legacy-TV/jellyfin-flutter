@@ -198,7 +198,7 @@ class Session extends ChangeNotifier {
   String get subColor => _prefs.getString('subColor') ?? 'white';
   String get subBackground => _prefs.getString('subBackground') ?? 'shadow';
   int get subLift => _prefs.getInt('subLift') ?? 90;
-  /// Test: play through the direct-feed engine (packages/webos_native_player) instead of the TV's player.
+  /// Test: play through the direct-feed engine (the webos_native_player plugin) instead of the TV's player.
   bool get nativePlayer => _prefs.getBool('nativePlayer') ?? false;
   /// Minutes without a key press before the screensaver; 0 = never.
   int get screensaverMinutes => _prefs.getInt('screensaver') ?? 5;

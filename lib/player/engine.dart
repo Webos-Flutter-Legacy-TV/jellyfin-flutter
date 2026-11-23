@@ -1,6 +1,6 @@
 // What the player page needs from a video engine, and the two engines that provide it:
 // - TvPlayerEngine: the TV's own player (video_player): files it can open itself, the server's HLS.
-// - DirectFeedEngine: packages/webos_native_player: the file read by the app and fed to the TV's
+// - DirectFeedEngine: the webos_native_player plugin (Webos-Flutter-Legacy-TV/plugins): the file read by the app and fed to the TV's
 //   decoders, so 4K HDR / Dolby Vision MKV, DTS and TrueHD play without the server converting them.
 import 'dart:async';
 
