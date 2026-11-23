@@ -4,12 +4,51 @@ What changed in each release of Jellyfin TV, written for the people using it. `t
 turns a version's section into its GitHub release description.
 
 Sections: **New** (things you can do that you could not before), **Improved**, **Fixed**,
-**Known issues**. Add entries under `[Unreleased]` as you go; `tools/release.py prepare X.Y.Z`
+**Known issues** (the first release also has **About**, **Built on**, **How to use** and
+**Features**). Add entries under `[Unreleased]` as you go; `tools/release.py prepare X.Y.Z`
 moves them under the new version.
 
 ## [Unreleased]
 
-### New
+## [0.1.0] - 2026-11-23
+
+### About
+
+The first release of **Jellyfin TV**, an unofficial [Jellyfin](https://jellyfin.org) client for
+LG webOS TVs. It plays the movies and shows on your own Jellyfin server, with screens made for the
+TV remote, and it also runs on older LG TVs (webOS 6, the 2021 models, and earlier). Its look
+follows the official Jellyfin webOS app for now; its own design comes later.
+
+### Built on
+
+- [Flutter](https://flutter.dev), with LG's Flutter for webOS and the community
+  [flutter-webos](https://github.com/Webos-Flutter-Legacy-TV/flutter-webos) legacy package, which
+  makes Flutter apps run on webOS 6 and older.
+- [Webos-Flutter-Legacy-TV plugins](https://github.com/Webos-Flutter-Legacy-TV/plugins), including
+  `webos_native_player`: the app's own video player that reads the file with FFmpeg and feeds the
+  TV's hardware decoders (subtitles drawn with libass).
+- The [Jellyfin](https://jellyfin.org) server API. Not affiliated with or endorsed by the Jellyfin
+  project or LG Electronics.
+
+### How to use
+
+1. **Install** the package for your TV (see *Which file do I need?* and *How to install* below).
+2. **Open Jellyfin TV.** Servers on your home network are found by themselves; otherwise type the
+   server's address (for example `http://192.168.1.10:8096`).
+3. **Sign in** with your user and password, or with **Quick Connect** (enter the code shown on the
+   TV in another Jellyfin app). Add more people later under *Who's watching?*.
+4. **Watch.** Pick something on Home or in a library and press OK. In the player: Left / Right
+   seek, OK pauses, Down opens the controls (audio, subtitles, speed and quality, playback info),
+   Back hides the controls and then leaves.
+5. **For 4K HDR, Dolby Vision, DTS or TrueHD files**, turn on **Settings → Playback → Player
+   engine → Direct feed**: the TV then plays the original file without the server converting it.
+   If a title does not play that way, it continues with the TV's own player.
+6. **With a Magic Remote**, point and click anywhere; rest the pointer at either end of a row to
+   scroll it.
+
+Needs a Jellyfin server (tested with Jellyfin 12.0) reachable from the TV.
+
+### Features
 
 - Browse your Jellyfin server on an LG TV: Home (following your Home layout from the other
   Jellyfin apps), libraries with sorting, filters and an A-Z jump, search with its own on-screen

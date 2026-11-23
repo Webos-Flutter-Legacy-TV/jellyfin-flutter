@@ -37,6 +37,10 @@ PACKAGES = [
 ]
 
 SECTION_TITLES = {  # changelog heading -> release heading
+    "About": "👋 About",
+    "Built on": "🧱 Built on",
+    "How to use": "🚀 How to use",
+    "Features": "✨ Features",
     "New": "✨ What's new",
     "Improved": "👍 Improved",
     "Fixed": "🐞 Fixed",
