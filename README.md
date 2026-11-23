@@ -33,20 +33,27 @@ On the user's LG C1 (webOS 6.5.3) the app's logical screen is 1920×1080, the si
 
 ## Releases
 
-`.github/workflows/build.yml` builds the legacy package on every push, checks it against
-webosbrew's firmware symbol data (it must load on webOS 5 and newer) and keeps the IPK and its
-webOS Homebrew Channel manifest as a workflow artifact. A version tag publishes a release:
+`tools/release.py` builds and releases the app; `.github/workflows/release.yml` does the same on
+GitHub. Every push to main builds both IPKs and keeps them as a workflow artifact; a version tag
+publishes a GitHub release.
 
 ```sh
-tools/set-version.sh 0.2.0          # pubspec.yaml, webos/meta/appinfo.json, lib/api/client.dart
-git commit -am "Version 0.2.0" && git tag v0.2.0 && git push && git push origin v0.2.0
+tools/release.py check            # what the next release would contain
+tools/release.py build            # dist/: both IPKs, SHA256SUMS, icon, Homebrew manifest, build-info.json
+tools/release.py notes            # the release description, as GitHub will show it
+tools/release.py release 0.2.0    # version + changelog + commit + tag, then push: the workflow publishes
 ```
 
-The release carries `com.sostk.jellyfintv_<version>_arm.ipk`, `SHA256SUMS`, the icon and
-`com.sostk.jellyfintv.manifest.json` (id, version, `ipkUrl`, `ipkHash.sha256`, the format
-webosbrew's apps repository uses). Homebrew Channel downloads `ipkUrl` without signing in, so
-installing through it needs the repository (or at least its releases) to be public; until then,
-install the IPK with `ares-install`.
+Write what changed under `[Unreleased]` in [CHANGELOG.md](CHANGELOG.md) (New, Improved, Fixed,
+Known issues, in words a TV viewer understands). `release` moves it under the new version, and the
+release description is built from that section plus which file is for which TV, how to install,
+the exact flutter-webos and plugins commits, checksums and every commit since the last release.
+
+A release carries `com.sostk.jellyfintv_<version>_webos-legacy.ipk` (webOS 6 and older),
+`com.sostk.jellyfintv_<version>_webos26.ipk`, `SHA256SUMS`, the icon and
+`com.sostk.jellyfintv.manifest.json` (webosbrew's app-repository format, for the legacy package).
+The workflow builds with flutter-webos `main` (a manual run can name another branch or tag) and
+accepts the LG SDK License Agreement for the webOS NDK, as flutter-webos's own CI does.
 
 ## Preview on the PC
 
