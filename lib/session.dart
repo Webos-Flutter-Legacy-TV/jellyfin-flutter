@@ -193,6 +193,8 @@ class Session extends ChangeNotifier {
   bool get autoplayNext => _prefs.getBool('autoplayNext') ?? true;
   int get seekBack => _prefs.getInt('seekBack') ?? 10;
   int get seekForward => _prefs.getInt('seekForward') ?? 30;
+  /// Lip-sync for the direct-feed engine: sound this many ms later (negative: earlier).
+  int get audioDelayMs => _prefs.getInt('audioDelayMs') ?? 0;
   /// Subtitle text size (logical px on the 1080p canvas), colour, background and height.
   int get subSize => _prefs.getInt('subSize') ?? 44;
   String get subColor => _prefs.getString('subColor') ?? 'white';

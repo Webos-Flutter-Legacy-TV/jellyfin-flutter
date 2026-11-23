@@ -41,6 +41,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
   PlaybackEngine? _video;
   String? _error;
   bool _osd = true;
+  bool _showInfo = false;      // playback information panel
+  bool _directFailed = false;  // the direct-feed engine failed once: the TV's player for this title
+  bool _tryingDirect = false;
+  PlaybackEngine? _pending;    // created by _start, not yet shown
   Timer? _hideTimer, _reportTimer;
   Duration? _seekTarget; // while seeking with Left / Right
   Timer? _seekCommit;
@@ -119,9 +123,15 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   /// Video the direct-feed engine can feed (H.264 / HEVC).
+  bool _isFileSubtitle(Item item, int? index) {
+    if (index == null || index < 0) return false;
+    final s = item.streams('Subtitle').where((s) => s['Index'] == index).firstOrNull;
+    return s != null && s['IsExternal'] != true;
+  }
+
   bool _directVideo(Item item) {
     final codec = (item.streams('Video').firstOrNull?['Codec'] as String?)?.toLowerCase();
-    return codec == 'h264' || codec == 'hevc' || codec == 'h265';
+    return codec == 'h264' || codec == 'hevc' || codec == 'h265' || codec == 'av1';
   }
 
   Duration get _position => _video?.position ?? Duration.zero;
@@ -137,24 +147,32 @@ class _PlayerScreenState extends State<PlayerScreen> {
       final choice = widget.session.trackChoices[item.id];
       final start = at ?? widget.startAt ?? (widget.fromStart ? Duration.zero : item.position);
       // The direct-feed engine (Settings > Playback > Player engine) plays the file itself for H.264
-      // and HEVC; other codecs stay with the TV's player and the server. Picture subtitles (PGS,
-      // VobSub) are not drawn by it yet: it plays without them rather than handing the file to the
-      // TV's player, which shows Dolby Vision as HDR.
+      // HEVC and AV1; other codecs stay with the TV's player and the server. Picture subtitles (PGS,
+      // VobSub) are decoded from the file by the plugin.
       PlaybackPlan? plan;
       PlaybackEngine? controller;
-      if (!kIsWeb && widget.session.nativePlayer && _bitrateOverride == null && _directVideo(item)) {
+      _tryingDirect = false;
+      if (!kIsWeb && widget.session.nativePlayer && !_directFailed && _bitrateOverride == null && _directVideo(item)) {
+        _tryingDirect = true;
         final d = await _client.directPlan(item, audioIndex: choice?.audio, subtitleIndex: choice?.subtitle);
+        // Subtitle tracks inside the file (text, ASS, PGS) are decoded by the plugin; only an external
+        // subtitle file comes from the server as WebVTT.
+        final fromFile = _isFileSubtitle(item, d.plan.subtitleIndex);
         final p = d.plan;
-        plan = d.imageSubtitle
-            ? PlaybackPlan(url: p.url, method: p.method, playSessionId: p.playSessionId, mediaSourceId: p.mediaSourceId, mediaSource: p.mediaSource, audioIndex: p.audioIndex, subtitleIndex: -1)
+        plan = fromFile
+            ? PlaybackPlan(url: p.url, method: p.method, playSessionId: p.playSessionId, mediaSourceId: p.mediaSourceId, mediaSource: p.mediaSource, audioIndex: p.audioIndex, subtitleIndex: p.subtitleIndex)
             : p;
-        controller = DirectFeedEngine(plan.url, startAt: start, audioStream: plan.audioIndex);
-        if (d.imageSubtitle) _showNote('Picture subtitles (PGS) are not supported yet: playing without subtitles', seconds: 6);
+        controller = DirectFeedEngine(plan.url,
+            startAt: start,
+            audioStream: plan.audioIndex,
+            subtitleStream: fromFile ? plan.subtitleIndex : null,
+            audioDelay: Duration(milliseconds: widget.session.audioDelayMs));
       }
       if (controller == null) {
         plan = await _client.plan(item, audioIndex: choice?.audio, subtitleIndex: choice?.subtitle, start: start, maxBitrate: _bitrateOverride ?? widget.session.maxBitrate);
         controller = TvPlayerEngine(plan.url);
       }
+      _pending = controller;
       await controller.initialize();
       // A transcode starts where it was asked to; the TV's player opens a direct file at 0 and is seeked.
       if (controller is TvPlayerEngine && plan!.method == PlayMethod.directPlay && start > Duration.zero) await controller.seekTo(start);
@@ -167,6 +185,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
         controller.dispose();
         return;
       }
+      _pending = null;
       setState(() {
         _item = item;
         _plan = plan;
@@ -191,13 +210,68 @@ class _PlayerScreenState extends State<PlayerScreen> {
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
     } catch (e) {
+      final failed = _pending;
+      _pending = null;
+      failed?.dispose();
+      if (_tryingDirect && !_directFailed) {
+        await _fallBackToTvPlayer('$e', at: at ?? widget.startAt);
+        return;
+      }
       if (mounted) setState(() => _error = 'This video could not be played ($e).');
     }
+  }
+
+  /// Playback information: the engine's own report plus the play method.
+  Widget _infoPanel() {
+    final v = _video!, plan = _plan;
+    final rows = {
+      ...(v is DirectFeedEngine ? v.info : {'Engine': 'TV player'}),
+      if (plan != null) 'Delivery': plan.describe,
+    };
+    return Positioned(
+      right: Insets.page,
+      top: 150,
+      child: Container(
+        width: 620,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(color: const Color(0xD90B0D12), borderRadius: BorderRadius.circular(16)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+          Text('Playback info', style: tv(26, weight: FontWeight.w700)),
+          const SizedBox(height: 14),
+          for (final e in rows.entries)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                SizedBox(width: 200, child: Text(e.key, style: tv(20, color: Palette.text2))),
+                Expanded(child: Text(e.value, style: tv(20, weight: FontWeight.w500))),
+              ]),
+            ),
+        ]),
+      ),
+    );
+  }
+
+  /// The direct-feed engine failed: play this title with the TV's own player, once.
+  Future<void> _fallBackToTvPlayer(String why, {Duration? at}) async {
+    if (_directFailed || !mounted) return;
+    _directFailed = true;
+    final v = _video;
+    final pos = at ?? (v != null && v.position > Duration.zero ? v.position : null);
+    _showNote('Direct feed stopped ($why): continuing with the TV player', seconds: 6);
+    await _start(at: pos);
   }
 
   void _onTick() {
     final v = _video;
     if (v == null || !mounted) return;
+    if (v.error != null && v is DirectFeedEngine) {
+      if (!_directFailed) {
+        _fallBackToTvPlayer(v.error!);
+      } else if (_error == null) {
+        setState(() => _error = v.error);
+      }
+      return;
+    }
     if (!_ended && v.completed) {
       _ended = true;
       _finish();
@@ -392,7 +466,20 @@ class _PlayerScreenState extends State<PlayerScreen> {
     final before = widget.session.trackChoices[item.id];
     await showTracksPanel(context, widget.session, item, startTab: tab);
     final after = widget.session.trackChoices[item.id];
-    if (after != before) {
+    final v = _video;
+    if (after != before && v is DirectFeedEngine && after != null && after.audio != null &&
+        after.audio != before?.audio && after.subtitle == before?.subtitle) {
+      // Direct feed: only the audio changed, switched in place.
+      await v.setAudioStream(after.audio!);
+      _showOsd();
+    } else if (after != before && v is DirectFeedEngine && after?.audio == before?.audio &&
+        (_isFileSubtitle(item, after?.subtitle) || (after?.subtitle ?? -1) < 0)) {
+      // Direct feed: a subtitle track of the file (or none) is decoded by the plugin, switched in place.
+      final sub = after?.subtitle;
+      await v.setSubtitleStream(sub != null && sub >= 0 ? sub : null);
+      v.clearCaptions();
+      _showOsd();
+    } else if (after != before) {
       // New tracks: ask the server again from here.
       final at = _position;
       _stopReporting();
@@ -434,6 +521,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
             if (_video?.isBuffering == true && _osd == false)
               const Center(child: SizedBox(width: 64, height: 64, child: CircularProgressIndicator(strokeWidth: 5, color: Colors.white))),
             _captions(),
+            if (_video is DirectFeedEngine) (_video as DirectFeedEngine).fileSubtitles(),
+            if (_video != null && _showInfo) _infoPanel(),
             if (_video != null) _skipButton(),
             if (_video != null) _upNextCard(),
             if (_video != null)
@@ -503,7 +592,16 @@ class _PlayerScreenState extends State<PlayerScreen> {
           const PanelHeader(title: 'Playback'),
           const PanelSection('Speed'),
           for (final sp in const [0.5, 0.75, 1.0, 1.25, 1.5, 2.0])
-            PanelRow(title: sp == 1.0 ? 'Normal' : '${sp}x', selected: sp == _speed, autofocus: sp == _speed, onPressed: () => Navigator.of(context).pop(('speed', sp))),
+            if (!(_video is DirectFeedEngine && sp > (_video as DirectFeedEngine).maxSpeed))
+              PanelRow(title: sp == 1.0 ? 'Normal' : '${sp}x', selected: sp == _speed, autofocus: sp == _speed, onPressed: () => Navigator.of(context).pop(('speed', sp))),
+          if (_video is DirectFeedEngine) ...[
+            const PanelSection('Audio delay'),
+            for (final ms in const [-500, -300, -200, -100, -50, 0, 50, 100, 200, 300, 500])
+              PanelRow(
+                  title: ms == 0 ? 'None' : '${ms > 0 ? '+' : ''}$ms ms ${ms > 0 ? '(sound later)' : '(sound earlier)'}',
+                  selected: ms == widget.session.audioDelayMs,
+                  onPressed: () => Navigator.of(context).pop(('delay', ms))),
+          ],
           const PanelSection('Quality'),
           for (final (label, br) in const [('Auto', 120000000), ('40 Mbps · 4K', 40000000), ('20 Mbps · 1080p', 20000000), ('8 Mbps · 1080p', 8000000), ('4 Mbps · 720p', 4000000)])
             PanelRow(title: label, selected: br == (_bitrateOverride ?? widget.session.maxBitrate), onPressed: () => Navigator.of(context).pop(('quality', br))),
@@ -514,7 +612,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
       _showOsd();
       return;
     }
-    if (pick.$1 == 'speed') {
+    if (pick.$1 == 'delay') {
+      await widget.session.setInt('audioDelayMs', pick.$2.toInt());
+      final v = _video;
+      if (v is DirectFeedEngine) await v.setAudioDelay(Duration(milliseconds: pick.$2.toInt()));
+      _showOsd();
+    } else if (pick.$1 == 'speed') {
       _speed = pick.$2.toDouble();
       await _video?.setSpeed(_speed);
       _showOsd();
@@ -696,6 +799,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
             Expanded(
               child: Row(children: [
                 PillButton(icon: item.userData.isFavorite ? Icons.favorite : Icons.favorite_border, tooltip: 'Favourite', height: 68, onPressed: _toggleFavorite),
+                const SizedBox(width: 14),
+                PillButton(icon: Icons.info_outline, tooltip: 'Playback info', height: 68, onPressed: () => setState(() => _showInfo = !_showInfo)),
               ]),
             ),
             PillButton(icon: Icons.replay_10, tooltip: 'Back 10 seconds', height: 76, onPressed: () => _seekBy(Duration(seconds: -widget.session.seekBack))),

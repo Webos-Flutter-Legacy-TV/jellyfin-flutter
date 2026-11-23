@@ -35,6 +35,7 @@ Future<void> _devAutoplay(Session session) async {
   final client = session.client;
   if (nav == null || client == null) return;
   if (req.$3) await session.setBool('nativePlayer', true);
+  if (req.$4 != null) session.chooseTracks(req.$1, subtitle: req.$4);
   try {
     final item = await client.item(req.$1);
     nav.push(tvRoute(PlayerScreen(session: session, item: item, startAt: Duration(milliseconds: req.$2))));

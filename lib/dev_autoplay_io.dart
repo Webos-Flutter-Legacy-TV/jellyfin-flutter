@@ -1,6 +1,6 @@
 import 'dart:io';
 
-Future<(String, int, bool)?> readDevAutoplay() async {
+Future<(String, int, bool, int?)?> readDevAutoplay() async {
   try {
     final f = File('/tmp/webos_native_player.autoplay');
     if (!await f.exists()) return null;
@@ -9,7 +9,8 @@ Future<(String, int, bool)?> readDevAutoplay() async {
       await f.delete();
     } catch (_) {}  // written by root: the test script removes it
     if (parts.isEmpty || parts.first.isEmpty) return null;
-    return (parts.first, parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0, parts.length > 2 && parts[2] == 'direct');
+    final sub = parts.where((p) => p.startsWith('sub=')).map((p) => int.tryParse(p.substring(4))).firstOrNull;
+    return (parts.first, parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0, parts.contains('direct'), sub);
   } catch (_) {
     return null;
   }

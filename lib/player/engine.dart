@@ -22,6 +22,11 @@ abstract class PlaybackEngine extends ChangeNotifier {
   String get captionText;
   /// Whether playback speed can be changed.
   bool get canChangeSpeed;
+  /// A failure after the start (the engine stopped), and its kind (engine-specific code).
+  String? get error => null;
+  String? get errorCode => null;
+  /// Playback information for the stats overlay (label -> value).
+  Map<String, String> get info => const {};
 
   Future<void> initialize();
   Future<void> play();
@@ -86,9 +91,12 @@ class TvPlayerEngine extends PlaybackEngine {
 }
 
 class DirectFeedEngine extends PlaybackEngine {
-  DirectFeedEngine(String url, {Duration startAt = Duration.zero, int? audioStream})
-      : _c = NativePlayerController(url, startAt: startAt, audioStream: audioStream) {
+  DirectFeedEngine(String url,
+      {Duration startAt = Duration.zero, int? audioStream, int? subtitleStream, Duration audioDelay = Duration.zero})
+      : _c = NativePlayerController(url,
+            startAt: startAt, audioStream: audioStream, subtitleStream: subtitleStream, audioDelay: audioDelay) {
     _c.addListener(notifyListeners);
+    _c.subtitle.addListener(notifyListeners);
   }
   final NativePlayerController _c;
   List<Caption> _captions = const [];
@@ -107,11 +115,39 @@ class DirectFeedEngine extends PlaybackEngine {
   @override
   Duration get duration => _v.duration;
   @override
-  Duration? get bufferedEnd => null;
+  Duration? get bufferedEnd => _v.buffered > Duration.zero ? _v.buffered : null;
+  @override
+  String? get error => _v.error;
+  @override
+  String? get errorCode => _v.errorCode;
+  @override
+  Map<String, String> get info {
+    final i = _v.info;
+    String? kbps(String? v) {
+      final n = int.tryParse(v ?? '');
+      return n == null ? null : n >= 1000 ? '${(n / 1000).toStringAsFixed(1)} Mb/s' : '$n kb/s';
+    }
+    return {
+      'Engine': 'Direct feed',
+      if (i['videoCodec'] != null) 'Video': '${i['videoCodec']} ${i['width']}x${i['height']}${i['fps'] != null ? ' @ ${i['fps']}' : ''}',
+      if (i['hdrType'] != null) 'TV shows': i['hdrType']!,
+      if (i['dolbyVision'] != null) 'Dolby Vision': i['dolbyVision']!,
+      if (i['audioSource'] != null) 'Audio': '${i['audioSource']} → ${i['audioOut']}',
+      if (i['audioPath'] != null) 'Audio path': i['audioPath']!,
+      if (kbps(i['videoKbps']) != null) 'Video bitrate': kbps(i['videoKbps'])!,
+      if ((int.tryParse(i['speed'] ?? '') ?? 1000) != 1000) 'Speed': '${(int.parse(i['speed']!) / 1000).toStringAsFixed(2)}x',
+      if (i['leadMs'] != null) 'Buffered ahead': '${((int.tryParse(i['leadMs']!) ?? 0) / 1000).toStringAsFixed(1)} s',
+      if (i['container'] != null) 'Container': i['container']!,
+      if ((int.tryParse(i['feedRetries'] ?? '') ?? 0) > 0) 'Feed retries': i['feedRetries']!,
+    };
+  }
   @override
   double get aspectRatio => _v.size.height > 0 ? _v.size.width / _v.size.height : 16 / 9;
   @override
   String get captionText {
+    // Text subtitles decoded from the file by the plugin, else the server's WebVTT.
+    final fromFile = _c.subtitle.value;
+    if (fromFile.images.isEmpty && fromFile.text.isNotEmpty) return fromFile.text;
     final p = _v.position;
     for (final c in _captions) {
       if (p >= c.start && p <= c.end) return c.text;
@@ -120,7 +156,28 @@ class DirectFeedEngine extends PlaybackEngine {
   }
 
   @override
-  bool get canChangeSpeed => false;
+  bool get canChangeSpeed => true;
+
+  /// The highest speed this video allows on the TV (frame rate x speed at most 60).
+  double get maxSpeed => _v.maxSpeed;
+
+  /// Another audio track of the file (its stream index), switched while playing.
+  Future<void> setAudioStream(int index) => _c.setAudioStream(index);
+
+  /// A subtitle track of the file decoded by the plugin (text, ASS, PGS, VobSub), or none.
+  Future<void> setSubtitleStream(int? index) => _c.setSubtitleStream(index);
+
+  /// Lip-sync: sound later (positive) or earlier than the picture.
+  Future<void> setAudioDelay(Duration d) => _c.setAudioDelay(d);
+
+  /// Drops the server's text subtitles (another track was picked).
+  void clearCaptions() {
+    _captions = const [];
+    notifyListeners();
+  }
+
+  /// The plugin's subtitles over the video.
+  Widget fileSubtitles() => NativeSubtitleView(controller: _c, drawText: false);
 
   @override
   Future<void> initialize() => _c.initialize();
@@ -131,7 +188,7 @@ class DirectFeedEngine extends PlaybackEngine {
   @override
   Future<void> seekTo(Duration to) => _c.seekTo(to);
   @override
-  Future<void> setSpeed(double speed) async {}
+  Future<void> setSpeed(double speed) => _c.setSpeed(speed);
   @override
   void setCaptions(Future<ClosedCaptionFile> file) {
     file.then((f) {
@@ -145,6 +202,7 @@ class DirectFeedEngine extends PlaybackEngine {
 
   @override
   void dispose() {
+    _c.subtitle.removeListener(notifyListeners);
     _c.removeListener(notifyListeners);
     _c.dispose();
     super.dispose();
